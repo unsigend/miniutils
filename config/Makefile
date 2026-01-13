@@ -27,7 +27,3 @@ DEBUG_MODE := 0
 
 # 0: not use for kernel, 1: use for kernel
 KERNEL_MODE := 0
-
-# 0: not use for standalone, 1: use for standalone
-# When use flag for standalone, the executable files will be built for every command
-STAND_ALONE_MODE := 1

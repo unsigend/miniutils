@@ -38,7 +38,7 @@ export CC
 export CXX
 export DEBUG_MODE
 export KERNEL_MODE
-export STAND_ALONE_MODE
+export TOOL_CHAIN_PREFIX
 
 .PHONY: clean all utils qsh help test test-utils test-qsh sync
 .DEFAULT_GOAL := help
