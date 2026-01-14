@@ -22,7 +22,9 @@ BUILD_DIR			:=	build
 SRC_DIR				:=	src
 ROOT_DIR			:=	..
 ROOT_INC_DIR		:=	$(ROOT_DIR)/include
-EXTERNAL_INC_DIR	:=	$(ROOT_DIR)/external/include
+EXTERNAL_DIR		:=	$(ROOT_DIR)/external
+EXTERNAL_SRC_DIR	:=	$(EXTERNAL_DIR)/src
+EXTERNAL_INC_DIR	:=	$(EXTERNAL_DIR)/include
 OBJ_DIR				:=	$(BUILD_DIR)/obj
 DEP_DIR				:=	$(BUILD_DIR)/dep
 LIB_DIR				:=	$(ROOT_DIR)/build/lib
@@ -35,9 +37,14 @@ MODULE_NAMES		:=	$(patsubst $(SRC_DIR)/%/,%,$(MODULE_DIRS))
 # source files and object files
 COREUTILS_SRC_FILES	:=	$(foreach dir,$(MODULE_DIRS),$(wildcard $(dir)*.c))
 COREUTILS_OBJ_FILES	:=	$(patsubst $(SRC_DIR)/%,$(OBJ_DIR)/%,$(COREUTILS_SRC_FILES:.c=.o))
+# external source files and object files
+EXTERNAL_SRC_FILES	:=	$(wildcard $(EXTERNAL_SRC_DIR)/*.c)
+EXTERNAL_OBJ_FILES	:=	$(patsubst $(EXTERNAL_SRC_DIR)/%,$(OBJ_DIR)/external/%,$(EXTERNAL_SRC_FILES:.c=.o))
 # main object files and executable files
 MODULE_MAIN_OBJS	:=	$(foreach mod,$(MODULE_NAMES),$(OBJ_DIR)/$(mod)/main.o)
-COREUTILS_BIN_FILES	:=	$(patsubst $(OBJ_DIR)/%,$(BIN_DIR)/%,$(MODULE_MAIN_OBJS:.o=))
+COREUTILS_BIN_FILES	:=	$(foreach mod,$(MODULE_NAMES),$(BIN_DIR)/$(mod))
+# Object files excluding main.o files
+COREUTILS_OBJ_NO_MAIN	:=	$(filter-out $(MODULE_MAIN_OBJS),$(COREUTILS_OBJ_FILES))
 
 # CC flags
 CC_WARN_FLAGS		:=	-Wall -Wextra -Werror -Wshadow
@@ -58,7 +65,7 @@ CC_OPTIMIZE_FLAGS	+=	-O3
 endif
 
 CC_FLAGS			:=	$(CC_WARN_FLAGS) $(CC_DEBUG_FLAGS) $(CC_STD_FLAGS)
-CC_FLAGS			+=	$(CC_INCLUDE_FLAGS) $(CC_DEP_FLAGS) $(CC_OPTIMIZE_FLAGS)
+CC_FLAGS			+=	$(CC_INCLUDE_FLAGS) $(CC_DEP_FLAGS) $(CC_OPTIMIZE_FLAGS) -fPIC
 
 # AR tool
 AR				:=	ar
@@ -81,19 +88,26 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(patsubst $(OBJ_DIR)/%,$(DEP_DIR)/%,$(dir $@))
 	@$(CC) $(CC_FLAGS) $(CC_DEP_FLAGS) $(patsubst $(OBJ_DIR)/%,$(DEP_DIR)/%,$(@:.o=.d)) -c $< -o $@
 
-# Executable rule: link against library
-$(BIN_DIR)/%: $(OBJ_DIR)/%/main.o | $(LIB_DIR)/libcoreutils.a
+# External object file rule
+$(OBJ_DIR)/external/%.o: $(EXTERNAL_SRC_DIR)/%.c
+	@echo " + CC\t$@"
+	@mkdir -p $(dir $@)
+	@mkdir -p $(patsubst $(OBJ_DIR)/%,$(DEP_DIR)/%,$(dir $@))
+	@$(CC) $(CC_FLAGS) $(CC_DEP_FLAGS) $(patsubst $(OBJ_DIR)/%,$(DEP_DIR)/%,$(@:.o=.d)) -c $< -o $@
+
+# Executable rule: link module's main.o with other object files and external libraries
+$(BIN_DIR)/%: $(OBJ_DIR)/%/main.o $(COREUTILS_OBJ_NO_MAIN) $(EXTERNAL_OBJ_FILES)
 	@echo " + LD\t$@"
 	@mkdir -p $(dir $@)
-	@$(CC) -o $@ $< -L$(LIB_DIR) -lcoreutils
+	@$(CC) -o $@ $< $(COREUTILS_OBJ_NO_MAIN) $(EXTERNAL_OBJ_FILES)
 
 # Library rule: create static library
-$(LIB_DIR)/libcoreutils.a: $(COREUTILS_OBJ_FILES)
+$(LIB_DIR)/libcoreutils.a: $(COREUTILS_OBJ_FILES) $(EXTERNAL_OBJ_FILES)
 	@echo " + AR\t$@"
 	@$(AR) rcs $@ $^
 
 # Shared library rule: create shared library
-$(LIB_DIR)/libcoreutils$(SHARED_LIB_POSTFIX): $(COREUTILS_OBJ_FILES)
+$(LIB_DIR)/libcoreutils$(SHARED_LIB_POSTFIX): $(COREUTILS_OBJ_FILES) $(EXTERNAL_OBJ_FILES)
 	@echo " + LD\t$@"
 	@$(CC) -shared -o $@ $^
 

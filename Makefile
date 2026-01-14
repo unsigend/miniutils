@@ -86,4 +86,21 @@ help:
 	@echo "  make test-qsh\t\ttest qsh"
 	@echo "  make clean\t\tclean all builds"
 	@echo "  make sync\t\tsync dependency"
+	@echo "  make clang\t\tclang compiler plugins for all"
+	@echo "  make clang-qsh\tclang compiler plugins for qsh"
+	@echo "  make clang-coreutils\tclang compiler plugins for coreutils"
+	@echo
 
+# Below are the clang plugins for extension code hints, if you are not using clang, you can ignore them
+# clang compiler plugins
+clang: clang-coreutils clang-qsh
+
+# clang compiler plugins for qsh
+clang-qsh:
+	@cd $(SHELL_DIR) && bear --append --output $(FULL_PATH)/compile_commands.json -- $(MAKE) all 2>/dev/null || true
+
+# clang compiler plugins for coreutils
+clang-coreutils:
+	@rm -f $(ROOT_DIR)/compile_commands.json
+	@cd $(UTIL_DIR) && $(MAKE) clean
+	@cd $(UTIL_DIR) && bear --output $(FULL_PATH)/compile_commands.json -- $(MAKE) all
