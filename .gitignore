@@ -10,3 +10,5 @@ qsh/build/
 
 .vscode/
 compile_commands.json
+coreutils/__pycache__/
+.cache/

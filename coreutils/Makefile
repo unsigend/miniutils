@@ -124,8 +124,8 @@ TARGETS			:=	$(LIB_TARGETS) $(BIN_TARGETS)
 all: _check_dir $(TARGETS)
 
 # Integrated test target
-test:
-	@:
+test: all
+	@python3 test_runner.py
 
 # Clean build directory
 clean:

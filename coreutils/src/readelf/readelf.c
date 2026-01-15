@@ -53,21 +53,20 @@ int readelf(int argc, char *argv[]){
 
     if (argc == 0){
         argparse_callback_help(&argparse, options);
-        return 0;
+        return 1;
     }
     argparse_parse(&argparse, argc, argv);
 
     if (argparse._argc == 0){
         argparse_callback_help(&argparse, options);
-        return 0;
+        return 1;
     } else {
         elf_file_t elf_file;
         elf_file.filename = argparse._argv[0];
         parse_header(&elf_file);
 
-        if (FLAG_HEADER){
-            print_header(&elf_file);
-        }
+        if (FLAG_HEADER) print_header(&elf_file);
+        
     }
     return 0;
 }
