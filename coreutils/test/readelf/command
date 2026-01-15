@@ -1,6 +1,7 @@
 -h coreutils/build/obj/readelf/header.o
 -h coreutils/build/obj/readelf/main.o
 -h coreutils/build/obj/readelf/readelf.o
+-h coreutils/build/obj/external/argparse.o
 
 # -h build/bin/readelf
 

@@ -2,6 +2,7 @@
 """
 mini-coreutils Test Framework
 A simple test runner that compares custom implementations with system utilities.
+Author: Yixiang Qiu
 """
 
 import sys
@@ -150,14 +151,14 @@ def print_diff(diff_lines):
         elif line.startswith('+++'):
             print(colorize(line, Colors.CYAN), end='')
         elif line.startswith('@@'):
-            print(colorize(line, Colors.YELLOW), end='')
+            print(colorize(line, Colors.YELLOW), end='\n')
         elif line.startswith('-') and i + 1 < len(diff_lines) and diff_lines[i + 1].startswith('+'):
             old_line = line[1:]
             new_line = diff_lines[i + 1][1:]
             old_highlighted, new_highlighted = highlight_differences_in_line(old_line, new_line)
             print(colorize('-', Colors.RED) + old_highlighted, end='')
             print(colorize('+', Colors.GREEN) + new_highlighted, end='')
-            i += 1  # Skip the next line as we've processed it
+            i += 1
         elif line.startswith('-'):
             # Unpaired deletion
             print(colorize('-', Colors.RED) + line[1:], end='')
@@ -170,21 +171,19 @@ def print_diff(diff_lines):
         i += 1
 
 def run_single_test_case(test_name, test_cmd, test_num, total_tests):
-    """Run a single test case."""
-    print(colorize(f"\n[Test {test_num}/{total_tests}]", Colors.BOLD))
-    print(colorize(f"{'='*60}", Colors.BOLD))
-    
+    """Run a single test case. Only outputs on failure."""
     # Parse command: command file contains arguments to pass to the program
     # The binary path is always build/bin/<test_name>
     test_args = test_cmd.split()
     
     # Binary path relative to script location: ../build/bin/<test_name>
     script_dir = Path(__file__).parent.absolute()
-    root_dir = script_dir.parent  # coreutils/ -> root/
+    root_dir = script_dir.parent
     binary_path_relative = Path("..") / "build" / "bin" / test_name
     binary_path_absolute = (script_dir / binary_path_relative).resolve()
     
     if not binary_path_absolute.exists():
+        print(colorize(f"\n[Test {test_num}/{total_tests}]", Colors.BOLD))
         print(colorize(f"Error: Binary not found: {binary_path_absolute}", Colors.RED))
         return False
     
@@ -194,9 +193,6 @@ def run_single_test_case(test_name, test_cmd, test_num, total_tests):
     system_cmd = [test_name] + test_args
     custom_cmd_display = [str(binary_path_relative)] + test_args
     custom_cmd_execute = [str(binary_path_absolute)] + test_args
-    
-    print(f"System command: {' '.join(system_cmd)}")
-    print(f"Custom command: {' '.join(custom_cmd_display)}")
     
     # Run commands from project root directory
     sys_stdout, sys_stderr, sys_rc = run_command(system_cmd, cwd=str(root_dir))
@@ -209,13 +205,15 @@ def run_single_test_case(test_name, test_cmd, test_num, total_tests):
     stderr_match, stderr_diff = compare_outputs(sys_stderr, custom_stderr, "system (stderr)", "custom (stderr)")
     
     if stdout_match and stderr_match:
-        print(colorize("✓ PASSED", Colors.GREEN))
+        # Success - no output
         return True
     else:
-        print(colorize("✗ FAILED", Colors.RED))
-        print(colorize("\nCommands executed:", Colors.BOLD))
-        print(f"  System: {' '.join(system_cmd)}")
-        print(f"  Custom: {' '.join(custom_cmd_display)}")
+        # Failure - show output
+        # print(colorize(f"\n[Test {test_num}/{total_tests}]", Colors.BOLD))
+        # print(colorize(f"{'='*60}", Colors.BOLD))
+        print(colorize("FAILED", Colors.RED))
+        print(f"System command: {' '.join(system_cmd)}")
+        print(f"Custom command: {' '.join(custom_cmd_display)}")
         
         if not stdout_match:
             print(colorize("\n--- STDOUT DIFF ---", Colors.BOLD))
@@ -229,14 +227,12 @@ def run_single_test_case(test_name, test_cmd, test_num, total_tests):
 
 def run_test(test_name):
     """Run all test cases for a test procedure."""
-    print(colorize(f"\n{'='*60}", Colors.BOLD))
     print(colorize(f"Running test procedure: {test_name}", Colors.BOLD))
-    print(colorize(f"{'='*60}", Colors.BOLD))
     
     # Read all test commands
     test_commands = read_test_commands(test_name)
     if not test_commands:
-        return False, 0, 0
+        return False
     
     total_tests = len(test_commands)
     passed_tests = 0
@@ -249,7 +245,7 @@ def run_test(test_name):
     # Display statistics
     print(f"\nTotal: {passed_tests}/{total_tests}")
     
-    return passed_tests == total_tests, passed_tests, total_tests
+    return passed_tests == total_tests
 
 def main():
     """Main entry point."""
