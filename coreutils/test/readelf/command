@@ -1,9 +1,14 @@
--h coreutils/build/obj/readelf/header.o
+-h coreutils/build/obj/readelf/ehdr.o
 -h coreutils/build/obj/readelf/main.o
 -h coreutils/build/obj/readelf/readelf.o
 -h coreutils/build/obj/external/argparse.o
+-h coreutils/build/obj/readelf/shdr.o
 
--S coreutils/build/obj/readelf/header.o
+-S coreutils/build/obj/readelf/ehdr.o
+-S coreutils/build/obj/readelf/main.o
+-S coreutils/build/obj/readelf/readelf.o
+-S coreutils/build/obj/external/argparse.o
+-S coreutils/build/obj/readelf/shdr.o
 
 # -h build/bin/readelf
 

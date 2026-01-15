@@ -25,7 +25,7 @@
     exit(EXIT_FAILURE); \
 } while (0); }
 
-void parse_shstrtab(elf_file_t *elf_file){
+void elf_parse_shstrtab(elf_file_t *elf_file){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);

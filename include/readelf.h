@@ -24,40 +24,45 @@
  * @brief: the ELF file structure
  */
 typedef struct {
-    /* the file descriptor of the ELF file */
+    /* file descriptor of the ELF file */
     int fd;
-    /* the filename of the ELF file */
+    /* filename of the ELF file */
     const char *filename;
-    /* the ELF class */
+    /* ELF class */
     int elf_class;
-    /* the ELF header */
+    /* ELF header */
     union {
         Elf64_Ehdr elf64_header;
         Elf32_Ehdr elf32_header;
     } header;
-    /* the section header table */
+    /* section header table */
     union {
         Elf64_Shdr* elf64_shdr;
         Elf32_Shdr* elf32_shdr;
     } section;
-    /* the section header string table */
+    /* section header string table */
     char* shstrtab;
-    /* the symbol table */
-    char* strtab;
+    /* symbol table */
+    union {
+        Elf64_Sym* elf64_sym;
+        Elf32_Sym* elf32_sym;
+    } symbol;
     
 } elf_file_t;
 
-extern int elf_file_init(elf_file_t *elf_file, const char *filename);
-extern void elf_file_cleanup(elf_file_t *elf_file);
+extern int elf_struct_init(elf_file_t *elf_file, const char *filename);
+extern void elf_struct_cleanup(elf_file_t *elf_file);
 
 extern int readelf(int argc, char *argv[]);
 
-extern void parse_ehdr(elf_file_t *elf_file);
-extern void parse_shdr(elf_file_t *elf_file);
-extern void parse_shstrtab(elf_file_t *elf_file);
+extern void elf_parse_ehdr(elf_file_t *elf_file);
+extern void elf_parse_shdr(elf_file_t *elf_file);
+extern void elf_parse_shstrtab(elf_file_t *elf_file);
+extern void elf_parse_symtab(elf_file_t *elf_file);
 
-extern void print_ehdr(elf_file_t *elf_file);
-extern void print_shdr(elf_file_t *elf_file);
-extern void print_shstrtab(elf_file_t *elf_file);
+extern void elf_print_ehdr(elf_file_t *elf_file);
+extern void elf_print_shdr(elf_file_t *elf_file);
+extern void elf_print_shstrtab(elf_file_t *elf_file);
+extern void elf_print_symtab(elf_file_t *elf_file);
 
 #endif

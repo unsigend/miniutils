@@ -18,7 +18,6 @@
 #include <argparse.h>
 #include <stdbool.h>
 #include <stdio.h>
-#include <stdnoreturn.h>
 #include <readelf.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -54,7 +53,7 @@ static const struct argparse_description desc = {
     ._program_name = "readelf"
 };
 
-int elf_file_init(elf_file_t *elf_file, const char *filename){
+int elf_struct_init(elf_file_t *elf_file, const char *filename){
     memset(elf_file, 0, sizeof(elf_file_t));
     elf_file->filename = filename;
     elf_file->fd = -1;
@@ -66,7 +65,7 @@ int elf_file_init(elf_file_t *elf_file, const char *filename){
     return 0;
 }
 
-void elf_file_cleanup(elf_file_t *elf_file){
+void elf_struct_cleanup(elf_file_t *elf_file){
     if (elf_file->fd != -1) {
         close(elf_file->fd);
         elf_file->fd = -1;
@@ -102,7 +101,7 @@ int readelf(int argc, char *argv[]){
         return EXIT_FAILURE;
     } else {
         elf_file_t elf_file;
-        if (elf_file_init(&elf_file, argparse._argv[0]) == -1) {
+        if (elf_struct_init(&elf_file, argparse._argv[0]) == -1) {
             perror("readelf");
             return EXIT_FAILURE;
         }
@@ -114,15 +113,18 @@ int readelf(int argc, char *argv[]){
         const bool any = FLAG_HEADER || FLAG_SECTION_HEADERS 
             || FLAG_SYMBOLS || FLAG_DYNAMIC || FLAG_RELOCS;
         
-        if (any) parse_ehdr(&elf_file);
-        if (FLAG_HEADER) print_ehdr(&elf_file);
-        if (FLAG_SECTION_HEADERS) {
-            parse_shdr(&elf_file);
-            parse_shstrtab(&elf_file);
-            print_shdr(&elf_file);
-        }
+        // parse the dependent sections binary data
+        if (any) elf_parse_ehdr(&elf_file);
+        if (FLAG_SECTION_HEADERS || FLAG_SYMBOLS) elf_parse_shdr(&elf_file);
+        if (FLAG_SECTION_HEADERS) elf_parse_shstrtab(&elf_file);
+        if (FLAG_SYMBOLS) elf_parse_symtab(&elf_file);
 
-        elf_file_cleanup(&elf_file);
+        // print meta information based on the flags
+        if (FLAG_HEADER) elf_print_ehdr(&elf_file);
+        if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);
+        if (FLAG_SYMBOLS) elf_print_symtab(&elf_file);
+
+        elf_struct_cleanup(&elf_file);
     }
     return EXIT_SUCCESS;
 }

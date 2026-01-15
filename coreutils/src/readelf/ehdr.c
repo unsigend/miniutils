@@ -259,7 +259,7 @@ static const char* get_machine_name(unsigned machine){
     }
 }
 
-void parse_ehdr(elf_file_t *elf_file){
+void elf_parse_ehdr(elf_file_t *elf_file){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);
@@ -305,8 +305,7 @@ void parse_ehdr(elf_file_t *elf_file){
     }
 }
 
-// print the ELF header
-void print_ehdr(elf_file_t *elf_file){
+void elf_print_ehdr(elf_file_t *elf_file){
     unsigned char *e_ident;
     unsigned e_type, e_machine, e_version, e_flags;
     uint64_t e_entry, e_phoff, e_shoff;

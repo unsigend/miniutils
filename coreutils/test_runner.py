@@ -8,6 +8,7 @@ Author: Yixiang Qiu
 import sys
 import subprocess
 import difflib
+import re
 from pathlib import Path
 
 # ANSI color codes
@@ -90,10 +91,16 @@ def run_command(cmd, shell=False, cwd=None):
         return "", str(e), 1
 
 def normalize_output(text):
-    """Normalize output for comparison (strip trailing whitespace)."""
+    """Normalize output for comparison."""
     lines = text.splitlines()
-    # Remove trailing whitespace from each line
-    normalized = [line.rstrip() for line in lines]
+    normalized = []
+    for line in lines:
+        # Replace all sequences of whitespace characters with a single space
+        # This makes the comparison space-insensitive (4 spaces vs 5 spaces doesn't matter)
+        normalized_line = re.sub(r'\s+', ' ', line)
+        # Remove trailing whitespace
+        normalized_line = normalized_line.rstrip()
+        normalized.append(normalized_line)
     # Remove trailing empty lines
     while normalized and not normalized[-1]:
         normalized.pop()

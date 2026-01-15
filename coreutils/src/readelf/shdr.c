@@ -22,7 +22,7 @@
 #include <string.h>
 
 #define INDEX_STR_ALIGN 4
-#define NAME_STR_ALIGN 16
+#define NAME_STR_ALIGN 17
 #define TYPE_STR_ALIGN 16
 #define ADDRESS_STR_ALIGN 16
 #define OFFSET_STR_ALIGN 8
@@ -30,62 +30,13 @@
 #define ENT_SIZE_STR_ALIGN 16
 #define FLAGS_STR_ALIGN 5
 #define LINK_STR_ALIGN 4
-#define INFO_STR_ALIGN 5
+#define INFO_STR_ALIGN 4
 #define ALIGN_STR_ALIGN 4
 
 #define _PANIC() {do {  \
     perror("readelf");  \
     exit(EXIT_FAILURE); \
 } while (0); }
-
-void parse_shdr(elf_file_t *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
-    }
-
-    uint64_t shoff;
-    uint16_t shnum;
-    
-    if (elf_file->elf_class == ELFCLASS64){
-        shoff = elf_file->header.elf64_header.e_shoff;
-        shnum = elf_file->header.elf64_header.e_shnum;
-    } else {
-        shoff = elf_file->header.elf32_header.e_shoff;
-        shnum = elf_file->header.elf32_header.e_shnum;
-    }
-
-    if (shoff == 0 || shnum == 0) {
-        if (elf_file->elf_class == ELFCLASS64) {
-            elf_file->section.elf64_shdr = NULL;
-        } else {
-            elf_file->section.elf32_shdr = NULL;
-        }
-        return;
-    }
-
-    if (elf_file->elf_class == ELFCLASS64){
-        elf_file->section.elf64_shdr = 
-           (Elf64_Shdr*)malloc(sizeof(Elf64_Shdr) * shnum);
-        if (!elf_file->section.elf64_shdr) _PANIC();
-    } else {
-        elf_file->section.elf32_shdr = 
-           (Elf32_Shdr*)malloc(sizeof(Elf32_Shdr) * shnum);
-        if (!elf_file->section.elf32_shdr) _PANIC();
-    }
-
-    if (lseek(elf_file->fd, shoff, SEEK_SET) == -1) _PANIC();
-
-    if (elf_file->elf_class == ELFCLASS64){
-        ssize_t nb = read(elf_file->fd, elf_file->section.elf64_shdr,
-            sizeof(Elf64_Shdr) * shnum);
-        if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum) _PANIC();
-    } else {
-        ssize_t nb = read(elf_file->fd, elf_file->section.elf32_shdr,
-            sizeof(Elf32_Shdr) * shnum);
-        if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum) _PANIC();
-    }
-}
 
 static const char *get_section_type_name(uint32_t type) {
     switch (type) {
@@ -134,14 +85,68 @@ static void format_section_flags(char *buf, size_t bufsize, uint32_t flags) {
 
 static void format_section_name(char *buf, size_t bufsize, const char *name) {
     size_t len = strlen(name);
-    if (len <= NAME_STR_ALIGN) {
-        snprintf(buf, bufsize, "%-*s", (int)NAME_STR_ALIGN, name);
+    if (len <= NAME_STR_ALIGN) snprintf(buf, bufsize, "%-*s", (int)NAME_STR_ALIGN, name);
+    else snprintf(buf, bufsize, "%.12s[...]", name);
+}
+
+static void print_flags_key(void) {
+    printf("Key to Flags:\n");
+    printf("  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),\n");
+    printf("  L (link order), O (extra OS processing required), G (group), T (TLS),\n");
+    printf("  C (compressed), x (unknown), o (OS specific), E (exclude),\n");
+    printf("  D (mbind), l (large), p (processor specific)\n");
+}
+
+void elf_parse_shdr(elf_file_t *elf_file){
+    if (elf_file->fd == -1) {
+        perror("readelf: file not open");
+        exit(EXIT_FAILURE);
+    }
+
+    uint64_t shoff;
+    uint16_t shnum;
+    
+    if (elf_file->elf_class == ELFCLASS64){
+        shoff = elf_file->header.elf64_header.e_shoff;
+        shnum = elf_file->header.elf64_header.e_shnum;
     } else {
-        snprintf(buf, bufsize, "%.12s[...]", name);
+        shoff = elf_file->header.elf32_header.e_shoff;
+        shnum = elf_file->header.elf32_header.e_shnum;
+    }
+
+    if (shoff == 0 || shnum == 0) {
+        if (elf_file->elf_class == ELFCLASS64) {
+            elf_file->section.elf64_shdr = NULL;
+        } else {
+            elf_file->section.elf32_shdr = NULL;
+        }
+        return;
+    }
+
+    if (elf_file->elf_class == ELFCLASS64){
+        elf_file->section.elf64_shdr = 
+           (Elf64_Shdr*)malloc(sizeof(Elf64_Shdr) * shnum);
+        if (!elf_file->section.elf64_shdr) _PANIC();
+    } else {
+        elf_file->section.elf32_shdr = 
+           (Elf32_Shdr*)malloc(sizeof(Elf32_Shdr) * shnum);
+        if (!elf_file->section.elf32_shdr) _PANIC();
+    }
+
+    if (lseek(elf_file->fd, shoff, SEEK_SET) == -1) _PANIC();
+
+    if (elf_file->elf_class == ELFCLASS64){
+        ssize_t nb = read(elf_file->fd, elf_file->section.elf64_shdr,
+            sizeof(Elf64_Shdr) * shnum);
+        if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum) _PANIC();
+    } else {
+        ssize_t nb = read(elf_file->fd, elf_file->section.elf32_shdr,
+            sizeof(Elf32_Shdr) * shnum);
+        if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum) _PANIC();
     }
 }
 
-void print_shdr(elf_file_t *elf_file){
+void elf_print_shdr(elf_file_t *elf_file){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);
@@ -163,10 +168,11 @@ void print_shdr(elf_file_t *elf_file){
     fputc('\n', stdout);
     fputs("Section Headers:\n", stdout);
 
-    printf("  [Nr] %-*s  %-*s  %-*s  %-*s\n", 
+    printf("  [Nr] %-*s %-*s  %-*s  %-*s\n", 
         NAME_STR_ALIGN, "Name", TYPE_STR_ALIGN, "Type", 
         ADDRESS_STR_ALIGN, "Address", OFFSET_STR_ALIGN, "Offset");
-    printf("       %-*s  %-*s  %-*s  %-*s  %-*s  %-*s\n", 
+    printf("%*s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s\n", 
+        7, " ",
         SIZE_STR_ALIGN, "Size", ENT_SIZE_STR_ALIGN, "EntSize", 
         FLAGS_STR_ALIGN, "Flags", LINK_STR_ALIGN, "Link", 
         INFO_STR_ALIGN, "Info", ALIGN_STR_ALIGN, "Align");
@@ -234,23 +240,29 @@ void print_shdr(elf_file_t *elf_file){
         format_section_name(name_buf, sizeof(name_buf), name);
 
         if (elf_file->elf_class == ELFCLASS64) {
-            printf("  [%2u] %s  %-*s  %016lx  %08lx\n", 
+            printf("  [%2u] %s %-*s  %016lx  %08lx\n", 
                 i, name_buf, TYPE_STR_ALIGN, type_str, sh_addr, sh_offset);
-            printf("       %016lx  %016lx  %-*s  %*u  %*u  %*lu\n",
+            printf("%*s%016lx  %016lx  %*s%*s  %*u  %*u  %*lu\n",
+                7, " ",
                 sh_size, sh_entsize, 
-                FLAGS_STR_ALIGN, flags_str,
+                FLAGS_STR_ALIGN - 2, flags_str,
+                2, " ", 
                 LINK_STR_ALIGN, sh_link, 
                 INFO_STR_ALIGN, sh_info,
                 ALIGN_STR_ALIGN, sh_addralign);
         } else {
-            printf("  [%2u] %s  %-*s  %08x  %08lx\n", 
+            printf("  [%2u] %s %-*s  %08x  %08lx\n", 
                 i, name_buf, TYPE_STR_ALIGN, type_str, (unsigned)sh_addr, sh_offset);
-            printf("       %08lx  %08lx  %-*s  %*u  %*u  %*u\n",
+            printf("%*s%08lx  %08lx  %*s%*s  %*u  %*u  %*u\n",
+                7, " ",
                 sh_size, sh_entsize, 
-                FLAGS_STR_ALIGN, flags_str, 
+                FLAGS_STR_ALIGN - 2, flags_str,
+                2, " ", 
                 LINK_STR_ALIGN, sh_link, 
                 INFO_STR_ALIGN, sh_info, 
                 ALIGN_STR_ALIGN, (unsigned)sh_addralign);
         }
     }
+    
+    print_flags_key();
 }
