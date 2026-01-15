@@ -35,27 +35,29 @@ typedef struct {
         Elf64_Ehdr elf64_header;
         Elf32_Ehdr elf32_header;
     } header;
-
+    /* the section header table */
+    union {
+        Elf64_Shdr* elf64_shdr;
+        Elf32_Shdr* elf32_shdr;
+    } section;
+    /* the section header string table */
+    char* shstrtab;
+    /* the symbol table */
+    char* strtab;
+    
 } elf_file_t;
 
-/**
- * @brief: the readelf enrty function
- * @param argc: the number of command line arguments
- * @param argv: the command line arguments
- * @return: the result of the readelf function
- */
+extern int elf_file_init(elf_file_t *elf_file, const char *filename);
+extern void elf_file_cleanup(elf_file_t *elf_file);
+
 extern int readelf(int argc, char *argv[]);
 
-/**
- * @brief: parse the ELF header
- * @param elf_file: the elf file struct
- */
-extern void parse_header(elf_file_t *elf_file);
+extern void parse_ehdr(elf_file_t *elf_file);
+extern void parse_shdr(elf_file_t *elf_file);
+extern void parse_shstrtab(elf_file_t *elf_file);
 
-/**
- * @brief: print the ELF header
- * @param elf_file: the elf file struct
- */
-extern void print_header(elf_file_t *elf_file);
+extern void print_ehdr(elf_file_t *elf_file);
+extern void print_shdr(elf_file_t *elf_file);
+extern void print_shstrtab(elf_file_t *elf_file);
 
 #endif

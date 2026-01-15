@@ -259,12 +259,17 @@ static const char* get_machine_name(unsigned machine){
     }
 }
 
-void parse_header(elf_file_t *elf_file){
-    elf_file->fd = open(elf_file->filename, O_RDONLY);
-    if (elf_file->fd == -1) goto error;
+void parse_ehdr(elf_file_t *elf_file){
+    if (elf_file->fd == -1) {
+        perror("readelf: file not open");
+        exit(EXIT_FAILURE);
+    }
 
     unsigned char e_ident[EI_NIDENT];
-    if (read(elf_file->fd, e_ident, EI_NIDENT) != EI_NIDENT) goto error;
+    if (read(elf_file->fd, e_ident, EI_NIDENT) != EI_NIDENT) {
+        perror("readelf");
+        exit(EXIT_FAILURE);
+    }
 
     if (strncmp((char *)e_ident, ELFMAG, SELFMAG) != 0){
         fprintf(stderr, "Not an ELF file - it has the wrong magic bytes at the start\n");
@@ -280,28 +285,28 @@ void parse_header(elf_file_t *elf_file){
         exit(EXIT_FAILURE);
     }
 
-    if (lseek(elf_file->fd, 0, SEEK_SET) == -1) goto error;
+    if (lseek(elf_file->fd, 0, SEEK_SET) == -1) {
+        perror("readelf");
+        exit(EXIT_FAILURE);
+    }
 
     if (elf_file->elf_class == ELFCLASS64){
         if (read(elf_file->fd, &elf_file->header.elf64_header,
-            sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr))
-            goto error;
+            sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr)) {
+            perror("readelf");
+            exit(EXIT_FAILURE);
+        }
     } else if (elf_file->elf_class == ELFCLASS32){
         if (read(elf_file->fd, &elf_file->header.elf32_header,
-            sizeof(Elf32_Ehdr)) != sizeof(Elf32_Ehdr))
-            goto error;
+            sizeof(Elf32_Ehdr)) != sizeof(Elf32_Ehdr)) {
+            perror("readelf");
+            exit(EXIT_FAILURE);
+        }
     }
-
-    close(elf_file->fd);
-    return;
-
-error:
-    perror("readelf");
-    exit(EXIT_FAILURE);
 }
 
 // print the ELF header
-void print_header(elf_file_t *elf_file){
+void print_ehdr(elf_file_t *elf_file){
     unsigned char *e_ident;
     unsigned e_type, e_machine, e_version, e_flags;
     uint64_t e_entry, e_phoff, e_shoff;
