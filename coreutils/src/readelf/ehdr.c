@@ -21,8 +21,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
-
-#define __ELF_INTERNAL__
 #include <readelf.h>
 
 static const char* get_osabi_name(unsigned char osabi){

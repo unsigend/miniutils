@@ -1,14 +1,36 @@
+# elf header
 -h coreutils/build/obj/readelf/ehdr.o
 -h coreutils/build/obj/readelf/main.o
 -h coreutils/build/obj/readelf/readelf.o
 -h coreutils/build/obj/external/argparse.o
 -h coreutils/build/obj/readelf/shdr.o
+# -h build/bin/readelf
 
+# section headers
 -S coreutils/build/obj/readelf/ehdr.o
 -S coreutils/build/obj/readelf/main.o
 -S coreutils/build/obj/readelf/readelf.o
 -S coreutils/build/obj/external/argparse.o
 -S coreutils/build/obj/readelf/shdr.o
 
-# -h build/bin/readelf
+# print command
+-p .noexist coreutils/build/obj/readelf/ehdr.o
+-p "-32" coreutils/build/obj/readelf/ehdr.o
+-p "1096" coreutils/build/obj/readelf/ehdr.o
+-p "0" coreutils/build/obj/readelf/ehdr.o
+-p coreutils/build/obj/readelf/ehdr.o coreutils/build/obj/readelf/ehdr.o
+
+# string table
+-p .strtab coreutils/build/obj/readelf/ehdr.o
+-p .strtab coreutils/build/obj/readelf/main.o
+-p .strtab coreutils/build/obj/readelf/readelf.o
+-p .strtab coreutils/build/obj/external/argparse.o
+-p .strtab coreutils/build/obj/readelf/shdr.o
+
+# symbol table
+-s coreutils/build/obj/readelf/ehdr.o
+-s coreutils/build/obj/readelf/main.o
+-s coreutils/build/obj/readelf/readelf.o
+-s coreutils/build/obj/external/argparse.o
+-s coreutils/build/obj/readelf/shdr.o
 

@@ -20,8 +20,6 @@
 
 #include <elf.h>
 
-/* To these macros needs define __ELF_INTERNAL__ */
-#if defined (__ELF_INTERNAL__)
 
 #define _ELF_EHRD_FLAG     (1U << 1)
 #define _ELF_SHDR_FLAG     (1U << 2)
@@ -57,8 +55,6 @@
 #define __GUARD_STRTAB(ELF_FILE)    \
     if (ELF_PARSED_STRTAB(ELF_FILE)) return;
 
-#endif
-
 /**
  * @brief: the ELF file structure
  */
@@ -85,11 +81,15 @@ typedef struct {
     char* shstrtab;
     /* string table */
     char* strtab;
+    /* size of the string table */
+    uint64_t sz_strtab;
     /* symbol table */
     union {
-        Elf64_Sym* sym64;
-        Elf32_Sym* sym32;
+        Elf64_Sym* symtab64;
+        Elf32_Sym* symtab32;
     } symtab;
+    /* size of the symbol table */
+    uint64_t sz_symtab;
     
 } _elf_meta;
 
@@ -112,4 +112,5 @@ extern void elf_print_shdr(_elf_meta *elf_file);
 extern void elf_print_shstrtab(_elf_meta *elf_file);
 extern void elf_print_symtab(_elf_meta *elf_file);
 extern void elf_print_strtab(_elf_meta *elf_file);
+extern void elf_print_section(_elf_meta *elf_file, const char* sh_name_idx);
 #endif

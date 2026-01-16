@@ -29,6 +29,7 @@ static bool FLAG_SECTION_HEADERS = false;
 static bool FLAG_SYMBOLS = false;
 static bool FLAG_DYNAMIC = false;
 static bool FLAG_RELOCS = false;
+static const char* FLAG_STRING_DUMP = NULL;
 
 static const struct argparse_option options[] = {
     OPTION_BOOLEAN('H', "help", "show this help message and exit", 
@@ -43,6 +44,8 @@ static const struct argparse_option options[] = {
         &FLAG_DYNAMIC, NULL, 0),
     OPTION_BOOLEAN('r', "relocs", "Display the relocation entries", 
         &FLAG_RELOCS, NULL, 0),
+    OPTION_STRING('p', "string-dump", "Dump the contents of section",
+        &FLAG_STRING_DUMP, NULL, 0),
     OPTION_END()
 };
 
@@ -108,6 +111,7 @@ int readelf(int argc, char *argv[]){
         if (FLAG_HEADER) elf_print_ehdr(&elf_file);
         if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);
         if (FLAG_SYMBOLS) elf_print_symtab(&elf_file);
+        if (FLAG_STRING_DUMP) elf_print_section(&elf_file, FLAG_STRING_DUMP);
 
         elf_struct_cleanup(&elf_file);
     }

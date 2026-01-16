@@ -15,8 +15,6 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#define __ELF_INTERNAL__
-
 #include <readelf.h>
 #include <stdio.h>
 #include <stdlib.h>
