@@ -17,29 +17,19 @@
 
 #define __ELF_INTERNAL__
 
-#include <readelf.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <stdio.h>
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <readelf.h>
 
-#define _PANIC() {do {  \
-    perror("readelf");  \
-    exit(EXIT_FAILURE); \
-} while (0); }
-
-void elf_parse_symtab(_elf_meta *elf_file){
+void elf_print(_elf_meta *elf_file, const char* sh_name){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);
     }
 
-    
-}
+    if (strcmp(sh_name, ".strtab") == 0) elf_print_strtab(elf_file);
 
-void elf_print_symtab(_elf_meta *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
-    }
+
 }

@@ -14,6 +14,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+
+#define __ELF_INTERNAL__
+
 #include <readelf.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -97,70 +100,78 @@ static void print_flags_key(void) {
     printf("  D (mbind), l (large), p (processor specific)\n");
 }
 
-void elf_parse_shdr(elf_file_t *elf_file){
+void elf_parse_shdr(_elf_meta *elf_file){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);
     }
+__GUARD_SHDR(elf_file);
+__DEP_EHDR(elf_file);
 
     uint64_t shoff;
     uint16_t shnum;
     
     if (elf_file->elf_class == ELFCLASS64){
-        shoff = elf_file->header.elf64_header.e_shoff;
-        shnum = elf_file->header.elf64_header.e_shnum;
+        shoff = elf_file->ehdr.ehdr64.e_shoff;
+        shnum = elf_file->ehdr.ehdr64.e_shnum;
     } else {
-        shoff = elf_file->header.elf32_header.e_shoff;
-        shnum = elf_file->header.elf32_header.e_shnum;
+        shoff = elf_file->ehdr.ehdr32.e_shoff;
+        shnum = elf_file->ehdr.ehdr32.e_shnum;
     }
 
     if (shoff == 0 || shnum == 0) {
         if (elf_file->elf_class == ELFCLASS64) {
-            elf_file->section.elf64_shdr = NULL;
+            elf_file->shdr.shdr64 = NULL;
         } else {
-            elf_file->section.elf32_shdr = NULL;
+            elf_file->shdr.shdr32 = NULL;
         }
+        elf_file->flags |= _ELF_SHDR_FLAG;
         return;
     }
 
     if (elf_file->elf_class == ELFCLASS64){
-        elf_file->section.elf64_shdr = 
+        elf_file->shdr.shdr64 = 
            (Elf64_Shdr*)malloc(sizeof(Elf64_Shdr) * shnum);
-        if (!elf_file->section.elf64_shdr) _PANIC();
+        if (!elf_file->shdr.shdr64) _PANIC();
     } else {
-        elf_file->section.elf32_shdr = 
+        elf_file->shdr.shdr32 = 
            (Elf32_Shdr*)malloc(sizeof(Elf32_Shdr) * shnum);
-        if (!elf_file->section.elf32_shdr) _PANIC();
+        if (!elf_file->shdr.shdr32) _PANIC();
     }
 
     if (lseek(elf_file->fd, shoff, SEEK_SET) == -1) _PANIC();
 
     if (elf_file->elf_class == ELFCLASS64){
-        ssize_t nb = read(elf_file->fd, elf_file->section.elf64_shdr,
+        ssize_t nb = read(elf_file->fd, elf_file->shdr.shdr64,
             sizeof(Elf64_Shdr) * shnum);
         if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum) _PANIC();
     } else {
-        ssize_t nb = read(elf_file->fd, elf_file->section.elf32_shdr,
+        ssize_t nb = read(elf_file->fd, elf_file->shdr.shdr32,
             sizeof(Elf32_Shdr) * shnum);
         if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum) _PANIC();
     }
+
+    elf_file->flags |= _ELF_SHDR_FLAG;
 }
 
-void elf_print_shdr(elf_file_t *elf_file){
+void elf_print_shdr(_elf_meta *elf_file){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);
     }
+__DEP_EHDR(elf_file);
+__DEP_SHDR(elf_file);
+__DEP_SHSTRTAB(elf_file);
 
     uint16_t shnum;
     uint64_t shoff;
 
     if (elf_file->elf_class == ELFCLASS64){
-        shnum = elf_file->header.elf64_header.e_shnum;
-        shoff = elf_file->header.elf64_header.e_shoff;
+        shnum = elf_file->ehdr.ehdr64.e_shnum;
+        shoff = elf_file->ehdr.ehdr64.e_shoff;
     } else {
-        shnum = elf_file->header.elf32_header.e_shnum;
-        shoff = elf_file->header.elf32_header.e_shoff;
+        shnum = elf_file->ehdr.ehdr32.e_shnum;
+        shoff = elf_file->ehdr.ehdr32.e_shoff;
     }
 
     printf("There are %d section headers, starting at offset 0x%lx:\n", 
@@ -177,22 +188,22 @@ void elf_print_shdr(elf_file_t *elf_file){
         FLAGS_STR_ALIGN, "Flags", LINK_STR_ALIGN, "Link", 
         INFO_STR_ALIGN, "Info", ALIGN_STR_ALIGN, "Align");
 
-    if (!elf_file->section.elf64_shdr 
-        && !elf_file->section.elf32_shdr) return;
+    if (!elf_file->shdr.shdr64 
+        && !elf_file->shdr.shdr32) return;
 
     uint16_t shstrndx;
     uint64_t shstrsize = 0;
     if (elf_file->elf_class == ELFCLASS64){
-        shstrndx = elf_file->header.elf64_header.e_shstrndx;
+        shstrndx = elf_file->ehdr.ehdr64.e_shstrndx;
         if (elf_file->shstrtab && shstrndx < shnum && 
-            elf_file->section.elf64_shdr) {
-            shstrsize = elf_file->section.elf64_shdr[shstrndx].sh_size;
+            elf_file->shdr.shdr64) {
+            shstrsize = elf_file->shdr.shdr64[shstrndx].sh_size;
         }
     } else {
-        shstrndx = elf_file->header.elf32_header.e_shstrndx;
+        shstrndx = elf_file->ehdr.ehdr32.e_shstrndx;
         if (elf_file->shstrtab && shstrndx < shnum && 
-            elf_file->section.elf32_shdr) {
-            shstrsize = elf_file->section.elf32_shdr[shstrndx].sh_size;
+            elf_file->shdr.shdr32) {
+            shstrsize = elf_file->shdr.shdr32[shstrndx].sh_size;
         }
     }
 
@@ -204,7 +215,7 @@ void elf_print_shdr(elf_file_t *elf_file){
         uint32_t sh_link, sh_info;
 
         if (elf_file->elf_class == ELFCLASS64) {
-            Elf64_Shdr *shdr = &elf_file->section.elf64_shdr[i];
+            Elf64_Shdr *shdr = &elf_file->shdr.shdr64[i];
             if (elf_file->shstrtab && shdr->sh_name < shstrsize) {
                 name = &elf_file->shstrtab[shdr->sh_name];
             }
@@ -218,7 +229,7 @@ void elf_print_shdr(elf_file_t *elf_file){
             sh_info = shdr->sh_info;
             sh_addralign = shdr->sh_addralign;
         } else {
-            Elf32_Shdr *shdr = &elf_file->section.elf32_shdr[i];
+            Elf32_Shdr *shdr = &elf_file->shdr.shdr32[i];
             if (elf_file->shstrtab && shdr->sh_name < shstrsize) {
                 name = &elf_file->shstrtab[shdr->sh_name];
             }

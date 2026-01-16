@@ -53,8 +53,8 @@ static const struct argparse_description desc = {
     ._program_name = "readelf"
 };
 
-int elf_struct_init(elf_file_t *elf_file, const char *filename){
-    memset(elf_file, 0, sizeof(elf_file_t));
+int elf_struct_init(_elf_meta *elf_file, const char *filename){
+    memset(elf_file, 0, sizeof(_elf_meta));
     elf_file->filename = filename;
     elf_file->fd = -1;
     
@@ -65,18 +65,18 @@ int elf_struct_init(elf_file_t *elf_file, const char *filename){
     return 0;
 }
 
-void elf_struct_cleanup(elf_file_t *elf_file){
+void elf_struct_cleanup(_elf_meta *elf_file){
     if (elf_file->fd != -1) {
         close(elf_file->fd);
         elf_file->fd = -1;
     }
-    if (elf_file->elf_class == ELFCLASS64 && elf_file->section.elf64_shdr) {
-        free(elf_file->section.elf64_shdr);
-        elf_file->section.elf64_shdr = NULL;
+    if (elf_file->elf_class == ELFCLASS64 && elf_file->shdr.shdr64) {
+        free(elf_file->shdr.shdr64);
+        elf_file->shdr.shdr64 = NULL;
     }
-    if (elf_file->elf_class == ELFCLASS32 && elf_file->section.elf32_shdr) {
-        free(elf_file->section.elf32_shdr);
-        elf_file->section.elf32_shdr = NULL;
+    if (elf_file->elf_class == ELFCLASS32 && elf_file->shdr.shdr32) {
+        free(elf_file->shdr.shdr32);
+        elf_file->shdr.shdr32 = NULL;
     }
     if (elf_file->shstrtab) {
         free(elf_file->shstrtab);
@@ -100,26 +100,11 @@ int readelf(int argc, char *argv[]){
         argparse_callback_help(&argparse, options);
         return EXIT_FAILURE;
     } else {
-        elf_file_t elf_file;
+        _elf_meta elf_file;
         if (elf_struct_init(&elf_file, argparse._argv[0]) == -1) {
             perror("readelf");
             return EXIT_FAILURE;
         }
-        /*
-         * lazy loading: only parse the necessary sections
-         * and if there is no flags like -h, -S, -s, -d, -r, 
-         * then don't parse the ELF header
-         */
-        const bool any = FLAG_HEADER || FLAG_SECTION_HEADERS 
-            || FLAG_SYMBOLS || FLAG_DYNAMIC || FLAG_RELOCS;
-        
-        // parse the dependent sections binary data
-        if (any) elf_parse_ehdr(&elf_file);
-        if (FLAG_SECTION_HEADERS || FLAG_SYMBOLS) elf_parse_shdr(&elf_file);
-        if (FLAG_SECTION_HEADERS) elf_parse_shstrtab(&elf_file);
-        if (FLAG_SYMBOLS) elf_parse_symtab(&elf_file);
-
-        // print meta information based on the flags
         if (FLAG_HEADER) elf_print_ehdr(&elf_file);
         if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);
         if (FLAG_SYMBOLS) elf_print_symtab(&elf_file);

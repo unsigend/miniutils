@@ -21,6 +21,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+
+#define __ELF_INTERNAL__
 #include <readelf.h>
 
 static const char* get_osabi_name(unsigned char osabi){
@@ -259,11 +261,12 @@ static const char* get_machine_name(unsigned machine){
     }
 }
 
-void elf_parse_ehdr(elf_file_t *elf_file){
+void elf_parse_ehdr(_elf_meta *elf_file){
     if (elf_file->fd == -1) {
         perror("readelf: file not open");
         exit(EXIT_FAILURE);
     }
+__GUARD_EHDR(elf_file);
 
     unsigned char e_ident[EI_NIDENT];
     if (read(elf_file->fd, e_ident, EI_NIDENT) != EI_NIDENT) {
@@ -291,21 +294,24 @@ void elf_parse_ehdr(elf_file_t *elf_file){
     }
 
     if (elf_file->elf_class == ELFCLASS64){
-        if (read(elf_file->fd, &elf_file->header.elf64_header,
+        if (read(elf_file->fd, &elf_file->ehdr.ehdr64,
             sizeof(Elf64_Ehdr)) != sizeof(Elf64_Ehdr)) {
             perror("readelf");
             exit(EXIT_FAILURE);
         }
     } else if (elf_file->elf_class == ELFCLASS32){
-        if (read(elf_file->fd, &elf_file->header.elf32_header,
+        if (read(elf_file->fd, &elf_file->ehdr.ehdr32,
             sizeof(Elf32_Ehdr)) != sizeof(Elf32_Ehdr)) {
             perror("readelf");
             exit(EXIT_FAILURE);
         }
     }
+    elf_file->flags |= _ELF_EHRD_FLAG;
 }
 
-void elf_print_ehdr(elf_file_t *elf_file){
+void elf_print_ehdr(_elf_meta *elf_file){
+__DEP_EHDR(elf_file);
+    
     unsigned char *e_ident;
     unsigned e_type, e_machine, e_version, e_flags;
     uint64_t e_entry, e_phoff, e_shoff;
@@ -315,35 +321,35 @@ void elf_print_ehdr(elf_file_t *elf_file){
      * using a compatiable way to get the values of the ELF header
      */
     if (elf_file->elf_class == ELFCLASS64){
-        e_ident = elf_file->header.elf64_header.e_ident;
-        e_type = elf_file->header.elf64_header.e_type;
-        e_machine = elf_file->header.elf64_header.e_machine;
-        e_version = elf_file->header.elf64_header.e_version;
-        e_entry = elf_file->header.elf64_header.e_entry;
-        e_phoff = elf_file->header.elf64_header.e_phoff;
-        e_shoff = elf_file->header.elf64_header.e_shoff;
-        e_flags = elf_file->header.elf64_header.e_flags;
-        e_ehsize = elf_file->header.elf64_header.e_ehsize;
-        e_phentsize = elf_file->header.elf64_header.e_phentsize;
-        e_phnum = elf_file->header.elf64_header.e_phnum;
-        e_shentsize = elf_file->header.elf64_header.e_shentsize;
-        e_shnum = elf_file->header.elf64_header.e_shnum;
-        e_shstrndx = elf_file->header.elf64_header.e_shstrndx;
+        e_ident = elf_file->ehdr.ehdr64.e_ident;
+        e_type = elf_file->ehdr.ehdr64.e_type;
+        e_machine = elf_file->ehdr.ehdr64.e_machine;
+        e_version = elf_file->ehdr.ehdr64.e_version;
+        e_entry = elf_file->ehdr.ehdr64.e_entry;
+        e_phoff = elf_file->ehdr.ehdr64.e_phoff;
+        e_shoff = elf_file->ehdr.ehdr64.e_shoff;
+        e_flags = elf_file->ehdr.ehdr64.e_flags;
+        e_ehsize = elf_file->ehdr.ehdr64.e_ehsize;
+        e_phentsize = elf_file->ehdr.ehdr64.e_phentsize;
+        e_phnum = elf_file->ehdr.ehdr64.e_phnum;
+        e_shentsize = elf_file->ehdr.ehdr64.e_shentsize;
+        e_shnum = elf_file->ehdr.ehdr64.e_shnum;
+        e_shstrndx = elf_file->ehdr.ehdr64.e_shstrndx;
     } else {
-        e_ident = elf_file->header.elf32_header.e_ident;
-        e_type = elf_file->header.elf32_header.e_type;
-        e_machine = elf_file->header.elf32_header.e_machine;
-        e_version = elf_file->header.elf32_header.e_version;
-        e_entry = elf_file->header.elf32_header.e_entry;
-        e_phoff = elf_file->header.elf32_header.e_phoff;
-        e_shoff = elf_file->header.elf32_header.e_shoff;
-        e_flags = elf_file->header.elf32_header.e_flags;
-        e_ehsize = elf_file->header.elf32_header.e_ehsize;
-        e_phentsize = elf_file->header.elf32_header.e_phentsize;
-        e_phnum = elf_file->header.elf32_header.e_phnum;
-        e_shentsize = elf_file->header.elf32_header.e_shentsize;
-        e_shnum = elf_file->header.elf32_header.e_shnum;
-        e_shstrndx = elf_file->header.elf32_header.e_shstrndx;
+        e_ident = elf_file->ehdr.ehdr32.e_ident;
+        e_type = elf_file->ehdr.ehdr32.e_type;
+        e_machine = elf_file->ehdr.ehdr32.e_machine;
+        e_version = elf_file->ehdr.ehdr32.e_version;
+        e_entry = elf_file->ehdr.ehdr32.e_entry;
+        e_phoff = elf_file->ehdr.ehdr32.e_phoff;
+        e_shoff = elf_file->ehdr.ehdr32.e_shoff;
+        e_flags = elf_file->ehdr.ehdr32.e_flags;
+        e_ehsize = elf_file->ehdr.ehdr32.e_ehsize;
+        e_phentsize = elf_file->ehdr.ehdr32.e_phentsize;
+        e_phnum = elf_file->ehdr.ehdr32.e_phnum;
+        e_shentsize = elf_file->ehdr.ehdr32.e_shentsize;
+        e_shnum = elf_file->ehdr.ehdr32.e_shnum;
+        e_shstrndx = elf_file->ehdr.ehdr32.e_shstrndx;
     }
 
     fprintf(stdout, "ELF Header:\n");

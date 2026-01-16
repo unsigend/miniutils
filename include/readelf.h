@@ -20,6 +20,45 @@
 
 #include <elf.h>
 
+/* To these macros needs define __ELF_INTERNAL__ */
+#if defined (__ELF_INTERNAL__)
+
+#define _ELF_EHRD_FLAG     (1U << 1)
+#define _ELF_SHDR_FLAG     (1U << 2)
+#define _ELF_SYMTAB_FLAG   (1U << 3)
+#define _ELF_STRTAB_FLAG   (1U << 4)
+#define _ELF_SHSTRTAB_FLAG (1U << 5)
+
+#define ELF_PARSED_EHDR(ELF_FILE)       ((ELF_FILE)->flags & _ELF_EHRD_FLAG)
+#define ELF_PARSED_SHDR(ELF_FILE)       ((ELF_FILE)->flags & _ELF_SHDR_FLAG)
+#define ELF_PARSED_SYMTAB(ELF_FILE)     ((ELF_FILE)->flags & _ELF_SYMTAB_FLAG)
+#define ELF_PARSED_STRTAB(ELF_FILE)     ((ELF_FILE)->flags & _ELF_STRTAB_FLAG)
+#define ELF_PARSED_SHSTRTAB(ELF_FILE)   ((ELF_FILE)->flags & _ELF_SHSTRTAB_FLAG)
+
+#define __DEP_EHDR(ELF_FILE)        \
+    if (!ELF_PARSED_EHDR(ELF_FILE)) elf_parse_ehdr(ELF_FILE);
+#define __DEP_SHDR(ELF_FILE)        \
+    if (!ELF_PARSED_SHDR(ELF_FILE)) elf_parse_shdr(ELF_FILE);
+#define __DEP_SHSTRTAB(ELF_FILE)    \
+    if (!ELF_PARSED_SHSTRTAB(ELF_FILE)) elf_parse_shstrtab(ELF_FILE);
+#define __DEP_SYMTAB(ELF_FILE)      \
+    if (!ELF_PARSED_SYMTAB(ELF_FILE)) elf_parse_symtab(ELF_FILE);
+#define __DEP_STRTAB(ELF_FILE)      \
+    if (!ELF_PARSED_STRTAB(ELF_FILE)) elf_parse_strtab(ELF_FILE);
+
+#define __GUARD_EHDR(ELF_FILE)      \
+    if (ELF_PARSED_EHDR(ELF_FILE)) return;
+#define __GUARD_SHDR(ELF_FILE)      \
+    if (ELF_PARSED_SHDR(ELF_FILE)) return;
+#define __GUARD_SHSTRTAB(ELF_FILE)   \
+    if (ELF_PARSED_SHSTRTAB(ELF_FILE)) return;
+#define __GUARD_SYMTAB(ELF_FILE)    \
+    if (ELF_PARSED_SYMTAB(ELF_FILE)) return;
+#define __GUARD_STRTAB(ELF_FILE)    \
+    if (ELF_PARSED_STRTAB(ELF_FILE)) return;
+
+#endif
+
 /**
  * @brief: the ELF file structure
  */
@@ -30,39 +69,47 @@ typedef struct {
     const char *filename;
     /* ELF class */
     int elf_class;
+    /* flags of the ELF file for parser */
+    uint32_t flags;
     /* ELF header */
     union {
-        Elf64_Ehdr elf64_header;
-        Elf32_Ehdr elf32_header;
-    } header;
+        Elf64_Ehdr ehdr64;
+        Elf32_Ehdr ehdr32;
+    } ehdr;
     /* section header table */
     union {
-        Elf64_Shdr* elf64_shdr;
-        Elf32_Shdr* elf32_shdr;
-    } section;
+        Elf64_Shdr* shdr64;
+        Elf32_Shdr* shdr32;
+    } shdr;
     /* section header string table */
     char* shstrtab;
+    /* string table */
+    char* strtab;
     /* symbol table */
     union {
-        Elf64_Sym* elf64_sym;
-        Elf32_Sym* elf32_sym;
-    } symbol;
+        Elf64_Sym* sym64;
+        Elf32_Sym* sym32;
+    } symtab;
     
-} elf_file_t;
+} _elf_meta;
 
-extern int elf_struct_init(elf_file_t *elf_file, const char *filename);
-extern void elf_struct_cleanup(elf_file_t *elf_file);
+extern int elf_struct_init(_elf_meta *elf_file, const char *filename);
+extern void elf_struct_cleanup(_elf_meta *elf_file);
 
+// main function
 extern int readelf(int argc, char *argv[]);
 
-extern void elf_parse_ehdr(elf_file_t *elf_file);
-extern void elf_parse_shdr(elf_file_t *elf_file);
-extern void elf_parse_shstrtab(elf_file_t *elf_file);
-extern void elf_parse_symtab(elf_file_t *elf_file);
+// parser functions
+extern void elf_parse_ehdr(_elf_meta *elf_file);
+extern void elf_parse_shdr(_elf_meta *elf_file);
+extern void elf_parse_shstrtab(_elf_meta *elf_file);
+extern void elf_parse_symtab(_elf_meta *elf_file);
+extern void elf_parse_strtab(_elf_meta *elf_file);
 
-extern void elf_print_ehdr(elf_file_t *elf_file);
-extern void elf_print_shdr(elf_file_t *elf_file);
-extern void elf_print_shstrtab(elf_file_t *elf_file);
-extern void elf_print_symtab(elf_file_t *elf_file);
-
+// binary data print functions
+extern void elf_print_ehdr(_elf_meta *elf_file);
+extern void elf_print_shdr(_elf_meta *elf_file);
+extern void elf_print_shstrtab(_elf_meta *elf_file);
+extern void elf_print_symtab(_elf_meta *elf_file);
+extern void elf_print_strtab(_elf_meta *elf_file);
 #endif
