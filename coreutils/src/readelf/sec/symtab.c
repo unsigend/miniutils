@@ -104,7 +104,7 @@ __DEP_SHSTRTAB(elf_file);
         if (nb == -1 || (size_t)nb != symsize) _PANIC();
     }
 
-    elf_file->sz_symtab = symsize;
+    elf_file->symtab_sz = symsize;
     elf_file->flags |= _ELF_SYMTAB_FLAG;
 }
 
@@ -129,9 +129,9 @@ __DEP_STRTAB(elf_file);
 
     uint64_t symentnum = 0;
     if (elf_file->elf_class == ELFCLASS64){
-        symentnum = elf_file->sz_symtab / sizeof(Elf64_Sym);
+        symentnum = elf_file->symtab_sz / sizeof(Elf64_Sym);
     } else {
-        symentnum = elf_file->sz_symtab / sizeof(Elf32_Sym);
+        symentnum = elf_file->symtab_sz / sizeof(Elf32_Sym);
     }
     
     printf("\nSymbol table '.symtab' contains %lu entries:\n", symentnum);
@@ -195,7 +195,7 @@ __DEP_STRTAB(elf_file);
                     }
                 }
             }
-        } else if (elf_file->strtab && st_name < elf_file->sz_strtab) {
+        } else if (elf_file->strtab && st_name < elf_file->strtab_sz) {
             name = &elf_file->strtab[st_name];
         }
         
@@ -214,4 +214,5 @@ __DEP_STRTAB(elf_file);
         } else printf(" ");
         printf("\n");
     }
+    putc('\n', stdout);
 }

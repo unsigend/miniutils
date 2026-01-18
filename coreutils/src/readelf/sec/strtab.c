@@ -71,6 +71,6 @@ __DEP_SHSTRTAB(elf_file)
     if ((uint64_t)read(elf_file->fd, elf_file->strtab, strtabsize)
         != strtabsize) _PANIC();
 
-    elf_file->sz_strtab = strtabsize;
+    elf_file->strtab_sz = strtabsize;
     elf_file->flags |= _ELF_STRTAB_FLAG;
 }

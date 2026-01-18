@@ -116,9 +116,11 @@ int readelf(int argc, char *argv[]){
         }
         if (FLAG_ALL){
             FLAG_HEADER = true;
-            FLAG_SECTION_HEADERS = true;
             FLAG_SYMBOLS = true;
+            FLAG_DYNAMIC = true;
             FLAG_RELOCS = true;
+            FLAG_SECTION_HEADERS = true;
+            FLAG_PROGRAM_HEADERS = true;
         }
         if (FLAG_HEADER) elf_print_ehdr(&elf_file);
         if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);

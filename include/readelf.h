@@ -20,7 +20,6 @@
 
 #include <elf.h>
 
-
 #define _ELF_EHRD_FLAG     (1U << 1)
 #define _ELF_SHDR_FLAG     (1U << 2)
 #define _ELF_SYMTAB_FLAG   (1U << 3)
@@ -72,47 +71,23 @@
     if (ELF_PARSED_RELA(ELF_FILE)) return;
 #define __GUARD_DYN(ELF_FILE)      \
     if (ELF_PARSED_DYN(ELF_FILE)) return;
+
 /**
  * @brief: the ELF file structure
  */
 typedef struct {
-    /* file descriptor of the ELF file */
-    int fd;
-    /* filename of the ELF file */
-    const char *filename;
-    /* ELF class */
-    int elf_class;
-    /* flags of the ELF file for parser */
-    uint32_t flags;
-    /* ELF header */
-    union {
-        Elf64_Ehdr ehdr64;
-        Elf32_Ehdr ehdr32;
-    } ehdr;
-    /* section header table */
-    union {
-        Elf64_Shdr* shdr64;
-        Elf32_Shdr* shdr32;
-    } shdr;
-    /* section header string table */
-    char* shstrtab;
-    /* string table */
-    char* strtab;
-    /* size of the string table */
-    uint64_t sz_strtab;
-    /* symbol table */
-    union {
-        Elf64_Sym* symtab64;
-        Elf32_Sym* symtab32;
-    } symtab;
-    /* size of the symbol table */
-    uint64_t sz_symtab;
-    /* program header table */
-    union {
-        Elf64_Phdr* phdr64;
-        Elf32_Phdr* phdr32;
-    } phdr;
-
+    int fd;                 /* file descriptor of the ELF file */
+    const char *filename;   /* filename of the ELF file */
+    uint32_t flags;         /* flags of the ELF file for parser */
+    int elf_class;          /* ELF class */
+    char* shstrtab;         /* section header string table */
+    char* strtab;           /* string table */
+    uint64_t strtab_sz;     /* size of the string table */
+    uint64_t symtab_sz;     /* size of the symbol table */
+    union { Elf64_Ehdr ehdr64; Elf32_Ehdr ehdr32; }     ehdr;       /* ELF header */
+    union { Elf64_Shdr* shdr64; Elf32_Shdr* shdr32; }   shdr;       /* section header table */
+    union { Elf64_Sym* symtab64; Elf32_Sym* symtab32; } symtab;     /* symbol table */
+    union { Elf64_Phdr* phdr64; Elf32_Phdr* phdr32; }   phdr;       /* program header table */
 } _elf_meta;
 
 extern int elf_struct_init(_elf_meta *elf_file, const char *filename);

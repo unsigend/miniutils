@@ -390,4 +390,5 @@ __DEP_EHDR(elf_file);
         fprintf(stdout, "  %-35s%d\n", "Number of section headers:", e_shnum);
         fprintf(stdout, "  %-35s%d\n", "Section header string table index:", e_shstrndx);
     }
+    putc('\n', stdout);
 }

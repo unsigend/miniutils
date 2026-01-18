@@ -1,2 +1,3 @@
-# mini-coreutils
-Core Unix Utils for kernel.
+# Mini-Coreutils
+
+mini-coreutils is a minimal implementation of core Unix(POSIX) utilities designed for kernel and freestanding environments where standard C library dependencies are unavailable. The project provides essential command line tools with a focus on simplicity and portability (for now it has no consideration about thread safety), requiring only qlibc as an external dependency. Built with freestanding C standards (or just posix system call) in mind, these utilities are used for future kernel development, and other constrained execution environments that demand lightweight, self-contained binaries.
