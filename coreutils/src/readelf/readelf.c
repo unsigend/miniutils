@@ -29,11 +29,15 @@ static bool FLAG_SECTION_HEADERS = false;
 static bool FLAG_SYMBOLS = false;
 static bool FLAG_DYNAMIC = false;
 static bool FLAG_RELOCS = false;
+static bool FLAG_ALL = false;
+static bool FLAG_PROGRAM_HEADERS = false;
 static const char* FLAG_STRING_DUMP = NULL;
 
 static const struct argparse_option options[] = {
     OPTION_BOOLEAN('H', "help", "show this help message and exit", 
         NULL, argparse_callback_help, 0),
+    OPTION_BOOLEAN('a', "all", "Display all information", 
+        &FLAG_ALL, NULL, 0),
     OPTION_BOOLEAN('h', "file-header", "Display the ELF header", 
         &FLAG_HEADER, NULL, 0),
     OPTION_BOOLEAN('S', "section-headers", "Display the section headers", 
@@ -44,6 +48,8 @@ static const struct argparse_option options[] = {
         &FLAG_DYNAMIC, NULL, 0),
     OPTION_BOOLEAN('r', "relocs", "Display the relocation entries", 
         &FLAG_RELOCS, NULL, 0),
+    OPTION_BOOLEAN('l', "program-headers", "Display the program headers", 
+        &FLAG_PROGRAM_HEADERS, NULL, 0),
     OPTION_STRING('p', "string-dump", "Dump the contents of section",
         &FLAG_STRING_DUMP, NULL, 0),
     OPTION_END()
@@ -108,8 +114,17 @@ int readelf(int argc, char *argv[]){
             perror("readelf");
             return EXIT_FAILURE;
         }
+        if (FLAG_ALL){
+            FLAG_HEADER = true;
+            FLAG_SECTION_HEADERS = true;
+            FLAG_SYMBOLS = true;
+            FLAG_RELOCS = true;
+        }
         if (FLAG_HEADER) elf_print_ehdr(&elf_file);
         if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);
+        if (FLAG_PROGRAM_HEADERS) elf_print_phdr(&elf_file);
+        if (FLAG_DYNAMIC) elf_print_dyn(&elf_file);
+        if (FLAG_RELOCS) elf_print_rela(&elf_file);
         if (FLAG_SYMBOLS) elf_print_symtab(&elf_file);
         if (FLAG_STRING_DUMP) elf_dump_section(&elf_file, FLAG_STRING_DUMP);
 

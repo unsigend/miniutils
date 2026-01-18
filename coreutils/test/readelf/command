@@ -1,43 +1,48 @@
 # elf header
--h coreutils/build/obj/readelf/ehdr.o
+-h coreutils/build/obj/readelf/sec/ehdr.o
 -h coreutils/build/obj/readelf/main.o
 -h coreutils/build/obj/readelf/readelf.o
 -h coreutils/build/obj/external/argparse.o
--h coreutils/build/obj/readelf/shdr.o
---file-header coreutils/build/obj/readelf/shdr.o
+-h coreutils/build/obj/readelf/sec/shdr.o
+--file-header coreutils/build/obj/readelf/sec/shdr.o
 # -h build/bin/readelf
 
 # section headers
--S coreutils/build/obj/readelf/ehdr.o
+-S coreutils/build/obj/readelf/sec/ehdr.o
 -S coreutils/build/obj/readelf/main.o
 -S coreutils/build/obj/readelf/readelf.o
 -S coreutils/build/obj/external/argparse.o
--S coreutils/build/obj/readelf/shdr.o
---section-headers coreutils/build/obj/readelf/shdr.o
+-S coreutils/build/obj/readelf/sec/shdr.o
+--section-headers coreutils/build/obj/readelf/sec/shdr.o
 
 # symbol table
--s coreutils/build/obj/readelf/ehdr.o
+-s coreutils/build/obj/readelf/sec/ehdr.o
 -s coreutils/build/obj/readelf/main.o
 -s coreutils/build/obj/readelf/readelf.o
 -s coreutils/build/obj/external/argparse.o
--s coreutils/build/obj/readelf/shdr.o
---symbols coreutils/build/obj/readelf/shdr.o
+-s coreutils/build/obj/readelf/sec/shdr.o
+--symbols coreutils/build/obj/readelf/sec/shdr.o
+--symbols coreutils/build/obj/external/argparse.o 
 
 # print command
--p .noexist coreutils/build/obj/readelf/ehdr.o
--p "-32" coreutils/build/obj/readelf/ehdr.o
--p "1096" coreutils/build/obj/readelf/ehdr.o
--p "0" coreutils/build/obj/readelf/ehdr.o
--p coreutils/build/obj/readelf/ehdr.o coreutils/build/obj/readelf/ehdr.o
--p .symtab coreutils/build/obj/readelf/ehdr.o
--p .shstrtab coreutils/build/obj/readelf/ehdr.o
--p .txt coreutils/build/obj/readelf/ehdr.o
---string-dump .symtab coreutils/build/obj/readelf/ehdr.o
+-p .noexist coreutils/build/obj/readelf/sec/ehdr.o
+-p "-32" coreutils/build/obj/readelf/sec/ehdr.o
+-p "1096" coreutils/build/obj/readelf/sec/ehdr.o
+-p "0" coreutils/build/obj/readelf/sec/ehdr.o
+-p coreutils/build/obj/readelf/sec/ehdr.o coreutils/build/obj/readelf/sec/ehdr.o
+-p .symtab coreutils/build/obj/readelf/sec/ehdr.o
+-p .shstrtab coreutils/build/obj/readelf/sec/ehdr.o
+-p .txt coreutils/build/obj/readelf/sec/ehdr.o
+--string-dump .symtab coreutils/build/obj/readelf/sec/ehdr.o
 
 # string table
--p .strtab coreutils/build/obj/readelf/ehdr.o
+-p .strtab coreutils/build/obj/readelf/sec/ehdr.o
 -p .strtab coreutils/build/obj/readelf/main.o
 -p .strtab coreutils/build/obj/readelf/readelf.o
 -p .strtab coreutils/build/obj/external/argparse.o
---string-dump .strtab coreutils/build/obj/readelf/shdr.o
+--string-dump .strtab coreutils/build/obj/readelf/sec/shdr.o
+
+# program headers
+-l coreutils/build/obj/readelf/sec/ehdr.o
+-l coreutils/build/obj/readelf/main.o
 

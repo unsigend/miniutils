@@ -34,7 +34,8 @@ BIN_DIR				:=	$(ROOT_DIR)/build/bin
 MODULE_DIRS			:=	$(wildcard $(SRC_DIR)/*/)
 MODULE_NAMES		:=	$(patsubst $(SRC_DIR)/%/,%,$(MODULE_DIRS))
 
-COREUTILS_SRC_FILES	:=	$(foreach dir,$(MODULE_DIRS),$(wildcard $(dir)*.c))
+# Recursively find all .c files under src/ maintaining directory structure
+COREUTILS_SRC_FILES	:=	$(shell find $(SRC_DIR) -type f -name "*.c")
 COREUTILS_OBJ_FILES	:=	$(patsubst $(SRC_DIR)/%,$(OBJ_DIR)/%,$(COREUTILS_SRC_FILES:.c=.o))
 EXTERNAL_SRC_FILES	:=	$(wildcard $(EXTERNAL_SRC_DIR)/*.c)
 EXTERNAL_OBJ_FILES	:=	$(patsubst $(EXTERNAL_SRC_DIR)/%,$(OBJ_DIR)/external/%,$(EXTERNAL_SRC_FILES:.c=.o))

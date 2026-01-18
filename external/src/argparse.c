@@ -55,7 +55,7 @@
 #define ASCII_COLOR_RESET   "\033[0m"
 
 // Buffer Macros
-#define CHAR_BUFFER_ALIGN       24
+#define CHAR_BUFFER_ALIGN       26
 #define CHAR_BUFFER_SIZE        64
 
 // Option Macros
