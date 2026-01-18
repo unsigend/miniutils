@@ -74,21 +74,3 @@ __DEP_SHSTRTAB(elf_file)
     elf_file->sz_strtab = strtabsize;
     elf_file->flags |= _ELF_STRTAB_FLAG;
 }
-
-void elf_print_strtab(_elf_meta *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
-    }
-
-__DEP_STRTAB(elf_file)
-
-    printf("\nString dump of section '.strtab':\n");
-    for (uint32_t off = 0; off < elf_file->sz_strtab; off++) {
-        if (elf_file->strtab[off]) {
-            printf("  [%6x]  %s\n", off, elf_file->strtab + off);
-            off += strlen(elf_file->strtab + off);
-        }
-    }
-    fputc('\n', stdout);
-}

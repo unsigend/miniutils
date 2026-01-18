@@ -112,5 +112,5 @@ extern void elf_print_shdr(_elf_meta *elf_file);
 extern void elf_print_shstrtab(_elf_meta *elf_file);
 extern void elf_print_symtab(_elf_meta *elf_file);
 extern void elf_print_strtab(_elf_meta *elf_file);
-extern void elf_print_section(_elf_meta *elf_file, const char* sh_name_idx);
+extern void elf_dump_section(_elf_meta *elf_file, const char* sh_name_idx);
 #endif

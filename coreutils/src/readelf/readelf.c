@@ -111,7 +111,7 @@ int readelf(int argc, char *argv[]){
         if (FLAG_HEADER) elf_print_ehdr(&elf_file);
         if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);
         if (FLAG_SYMBOLS) elf_print_symtab(&elf_file);
-        if (FLAG_STRING_DUMP) elf_print_section(&elf_file, FLAG_STRING_DUMP);
+        if (FLAG_STRING_DUMP) elf_dump_section(&elf_file, FLAG_STRING_DUMP);
 
         elf_struct_cleanup(&elf_file);
     }
