@@ -16,11 +16,11 @@
  */
 
 #include <readelf.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <stdint.h>
 #include <string.h>
+#include <unistd.h>
 
 #define INDEX_STR_ALIGN 4
 #define NAME_STR_ALIGN 17
@@ -34,244 +34,256 @@
 #define INFO_STR_ALIGN 4
 #define ALIGN_STR_ALIGN 4
 
-#define _PANIC() {do {  \
-    perror("readelf");  \
-    exit(EXIT_FAILURE); \
-} while (0); }
+#define _PANIC()          \
+  {                       \
+    do {                  \
+      perror("readelf");  \
+      exit(EXIT_FAILURE); \
+    } while (0);          \
+  }
 
 static const char *get_section_type_name(uint32_t type) {
-    switch (type) {
-        case SHT_NULL: return "NULL";
-        case SHT_PROGBITS: return "PROGBITS";
-        case SHT_SYMTAB: return "SYMTAB";
-        case SHT_STRTAB: return "STRTAB";
-        case SHT_RELA: return "RELA";
-        case SHT_HASH: return "HASH";
-        case SHT_DYNAMIC: return "DYNAMIC";
-        case SHT_NOTE: return "NOTE";
-        case SHT_NOBITS: return "NOBITS";
-        case SHT_REL: return "REL";
-        case SHT_SHLIB: return "SHLIB";
-        case SHT_DYNSYM: return "DYNSYM";
-        case SHT_INIT_ARRAY: return "INIT_ARRAY";
-        case SHT_FINI_ARRAY: return "FINI_ARRAY";
-        case SHT_PREINIT_ARRAY: return "PREINIT_ARRAY";
-        case SHT_GROUP: return "GROUP";
-        case SHT_SYMTAB_SHNDX: return "SYMTAB_SHNDX";
-        default:
-            if (type >= SHT_LOOS && type <= SHT_HIOS) return "OS";
-            if (type >= SHT_LOPROC && type <= SHT_HIPROC) return "PROC";
-            return "UNKNOWN";
-    }
+  switch (type) {
+    case SHT_NULL:
+      return "NULL";
+    case SHT_PROGBITS:
+      return "PROGBITS";
+    case SHT_SYMTAB:
+      return "SYMTAB";
+    case SHT_STRTAB:
+      return "STRTAB";
+    case SHT_RELA:
+      return "RELA";
+    case SHT_HASH:
+      return "HASH";
+    case SHT_DYNAMIC:
+      return "DYNAMIC";
+    case SHT_NOTE:
+      return "NOTE";
+    case SHT_NOBITS:
+      return "NOBITS";
+    case SHT_REL:
+      return "REL";
+    case SHT_SHLIB:
+      return "SHLIB";
+    case SHT_DYNSYM:
+      return "DYNSYM";
+    case SHT_INIT_ARRAY:
+      return "INIT_ARRAY";
+    case SHT_FINI_ARRAY:
+      return "FINI_ARRAY";
+    case SHT_PREINIT_ARRAY:
+      return "PREINIT_ARRAY";
+    case SHT_GROUP:
+      return "GROUP";
+    case SHT_SYMTAB_SHNDX:
+      return "SYMTAB_SHNDX";
+    default:
+      if (type >= SHT_LOOS && type <= SHT_HIOS) return "OS";
+      if (type >= SHT_LOPROC && type <= SHT_HIPROC) return "PROC";
+      return "UNKNOWN";
+  }
 }
 
 static void format_section_flags(char *buf, size_t bufsize, uint32_t flags) {
-    size_t pos = 0;
-    buf[0] = '\0';
+  size_t pos = 0;
+  buf[0] = '\0';
 
-    if (flags & SHF_WRITE) pos += snprintf(buf + pos, bufsize - pos, "W");
-    if (flags & SHF_ALLOC) pos += snprintf(buf + pos, bufsize - pos, "A");
-    if (flags & SHF_EXECINSTR) pos += snprintf(buf + pos, bufsize - pos, "X");
-    if (flags & SHF_MERGE) pos += snprintf(buf + pos, bufsize - pos, "M");
-    if (flags & SHF_STRINGS) pos += snprintf(buf + pos, bufsize - pos, "S");
-    if (flags & SHF_INFO_LINK) pos += snprintf(buf + pos, bufsize - pos, "I");
-    if (flags & SHF_LINK_ORDER) pos += snprintf(buf + pos, bufsize - pos, "L");
-    if (flags & SHF_OS_NONCONFORMING) pos += snprintf(buf + pos, bufsize - pos, "O");
-    if (flags & SHF_GROUP) pos += snprintf(buf + pos, bufsize - pos, "G");
-    if (flags & SHF_TLS) pos += snprintf(buf + pos, bufsize - pos, "T");
-    if (flags & SHF_COMPRESSED) pos += snprintf(buf + pos, bufsize - pos, "C");
+  if (flags & SHF_WRITE) pos += snprintf(buf + pos, bufsize - pos, "W");
+  if (flags & SHF_ALLOC) pos += snprintf(buf + pos, bufsize - pos, "A");
+  if (flags & SHF_EXECINSTR) pos += snprintf(buf + pos, bufsize - pos, "X");
+  if (flags & SHF_MERGE) pos += snprintf(buf + pos, bufsize - pos, "M");
+  if (flags & SHF_STRINGS) pos += snprintf(buf + pos, bufsize - pos, "S");
+  if (flags & SHF_INFO_LINK) pos += snprintf(buf + pos, bufsize - pos, "I");
+  if (flags & SHF_LINK_ORDER) pos += snprintf(buf + pos, bufsize - pos, "L");
+  if (flags & SHF_OS_NONCONFORMING)
+    pos += snprintf(buf + pos, bufsize - pos, "O");
+  if (flags & SHF_GROUP) pos += snprintf(buf + pos, bufsize - pos, "G");
+  if (flags & SHF_TLS) pos += snprintf(buf + pos, bufsize - pos, "T");
+  if (flags & SHF_COMPRESSED) pos += snprintf(buf + pos, bufsize - pos, "C");
 
-    if (pos == 0) snprintf(buf, bufsize, "   ");
+  if (pos == 0) snprintf(buf, bufsize, "   ");
 }
 
 static void format_section_name(char *buf, size_t bufsize, const char *name) {
-    size_t len = strlen(name);
-    if (len <= NAME_STR_ALIGN) snprintf(buf, bufsize, "%-*s", (int)NAME_STR_ALIGN, name);
-    else snprintf(buf, bufsize, "%.12s[...]", name);
+  size_t len = strlen(name);
+  if (len <= NAME_STR_ALIGN)
+    snprintf(buf, bufsize, "%-*s", (int)NAME_STR_ALIGN, name);
+  else
+    snprintf(buf, bufsize, "%.12s[...]", name);
 }
 
 static void print_flags_key(void) {
-    printf("Key to Flags:\n");
-    printf("  W (write), A (alloc), X (execute), M (merge), S (strings), I (info),\n");
-    printf("  L (link order), O (extra OS processing required), G (group), T (TLS),\n");
-    printf("  C (compressed), x (unknown), o (OS specific), E (exclude),\n");
-    printf("  D (mbind), l (large), p (processor specific)\n");
+  printf("Key to Flags:\n");
+  printf(
+      "  W (write), A (alloc), X (execute), M (merge), S (strings), I "
+      "(info),\n");
+  printf(
+      "  L (link order), O (extra OS processing required), G (group), T "
+      "(TLS),\n");
+  printf("  C (compressed), x (unknown), o (OS specific), E (exclude),\n");
+  printf("  D (mbind), l (large), p (processor specific)\n");
 }
 
-void elf_parse_shdr(_elf_meta *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
-    }
-__GUARD_SHDR(elf_file);
-__DEP_EHDR(elf_file);
+void elf_parse_shdr(_elf_meta *elf_file) {
+  if (elf_file->fd == -1) {
+    perror("readelf: file not open");
+    exit(EXIT_FAILURE);
+  }
+  __GUARD_SHDR(elf_file);
+  __DEP_EHDR(elf_file);
 
-    uint64_t shoff;
-    uint16_t shnum;
-    
-    if (elf_file->elf_class == ELFCLASS64){
-        shoff = elf_file->ehdr.ehdr64.e_shoff;
-        shnum = elf_file->ehdr.ehdr64.e_shnum;
+  uint64_t shoff;
+  uint16_t shnum;
+
+  if (elf_file->elf_class == ELFCLASS64) {
+    shoff = elf_file->ehdr.ehdr64.e_shoff;
+    shnum = elf_file->ehdr.ehdr64.e_shnum;
+  } else {
+    shoff = elf_file->ehdr.ehdr32.e_shoff;
+    shnum = elf_file->ehdr.ehdr32.e_shnum;
+  }
+
+  if (shoff == 0 || shnum == 0) {
+    if (elf_file->elf_class == ELFCLASS64) {
+      elf_file->shdr.shdr64 = NULL;
     } else {
-        shoff = elf_file->ehdr.ehdr32.e_shoff;
-        shnum = elf_file->ehdr.ehdr32.e_shnum;
+      elf_file->shdr.shdr32 = NULL;
     }
-
-    if (shoff == 0 || shnum == 0) {
-        if (elf_file->elf_class == ELFCLASS64) {
-            elf_file->shdr.shdr64 = NULL;
-        } else {
-            elf_file->shdr.shdr32 = NULL;
-        }
-        elf_file->flags |= _ELF_SHDR_FLAG;
-        return;
-    }
-
-    if (elf_file->elf_class == ELFCLASS64){
-        elf_file->shdr.shdr64 = 
-           (Elf64_Shdr*)malloc(sizeof(Elf64_Shdr) * shnum);
-        if (!elf_file->shdr.shdr64) _PANIC();
-    } else {
-        elf_file->shdr.shdr32 = 
-           (Elf32_Shdr*)malloc(sizeof(Elf32_Shdr) * shnum);
-        if (!elf_file->shdr.shdr32) _PANIC();
-    }
-
-    if (lseek(elf_file->fd, shoff, SEEK_SET) == -1) _PANIC();
-
-    if (elf_file->elf_class == ELFCLASS64){
-        ssize_t nb = read(elf_file->fd, elf_file->shdr.shdr64,
-            sizeof(Elf64_Shdr) * shnum);
-        if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum) _PANIC();
-    } else {
-        ssize_t nb = read(elf_file->fd, elf_file->shdr.shdr32,
-            sizeof(Elf32_Shdr) * shnum);
-        if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum) _PANIC();
-    }
-
     elf_file->flags |= _ELF_SHDR_FLAG;
+    return;
+  }
+
+  if (elf_file->elf_class == ELFCLASS64) {
+    elf_file->shdr.shdr64 = (Elf64_Shdr *)malloc(sizeof(Elf64_Shdr) * shnum);
+    if (!elf_file->shdr.shdr64) _PANIC();
+  } else {
+    elf_file->shdr.shdr32 = (Elf32_Shdr *)malloc(sizeof(Elf32_Shdr) * shnum);
+    if (!elf_file->shdr.shdr32) _PANIC();
+  }
+
+  if (lseek(elf_file->fd, shoff, SEEK_SET) == -1) _PANIC();
+
+  if (elf_file->elf_class == ELFCLASS64) {
+    ssize_t nb =
+        read(elf_file->fd, elf_file->shdr.shdr64, sizeof(Elf64_Shdr) * shnum);
+    if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum) _PANIC();
+  } else {
+    ssize_t nb =
+        read(elf_file->fd, elf_file->shdr.shdr32, sizeof(Elf32_Shdr) * shnum);
+    if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum) _PANIC();
+  }
+
+  elf_file->flags |= _ELF_SHDR_FLAG;
 }
 
-void elf_print_shdr(_elf_meta *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
+void elf_print_shdr(_elf_meta *elf_file) {
+  if (elf_file->fd == -1) {
+    perror("readelf: file not open");
+    exit(EXIT_FAILURE);
+  }
+  __DEP_EHDR(elf_file);
+  __DEP_SHDR(elf_file);
+  __DEP_SHSTRTAB(elf_file);
+
+  uint16_t shnum;
+  uint64_t shoff;
+
+  if (elf_file->elf_class == ELFCLASS64) {
+    shnum = elf_file->ehdr.ehdr64.e_shnum;
+    shoff = elf_file->ehdr.ehdr64.e_shoff;
+  } else {
+    shnum = elf_file->ehdr.ehdr32.e_shnum;
+    shoff = elf_file->ehdr.ehdr32.e_shoff;
+  }
+
+  printf("There are %d section headers, starting at offset 0x%lx:\n", shnum,
+         shoff);
+  fputc('\n', stdout);
+  fputs("Section Headers:\n", stdout);
+
+  printf("  [Nr] %-*s %-*s  %-*s  %-*s\n", NAME_STR_ALIGN, "Name",
+         TYPE_STR_ALIGN, "Type", ADDRESS_STR_ALIGN, "Address", OFFSET_STR_ALIGN,
+         "Offset");
+  printf("%*s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s\n", 7, " ", SIZE_STR_ALIGN,
+         "Size", ENT_SIZE_STR_ALIGN, "EntSize", FLAGS_STR_ALIGN, "Flags",
+         LINK_STR_ALIGN, "Link", INFO_STR_ALIGN, "Info", ALIGN_STR_ALIGN,
+         "Align");
+
+  if (!elf_file->shdr.shdr64 && !elf_file->shdr.shdr32) return;
+
+  uint16_t shstrndx;
+  uint64_t shstrsize = 0;
+  if (elf_file->elf_class == ELFCLASS64) {
+    shstrndx = elf_file->ehdr.ehdr64.e_shstrndx;
+    if (elf_file->shstrtab && shstrndx < shnum && elf_file->shdr.shdr64) {
+      shstrsize = elf_file->shdr.shdr64[shstrndx].sh_size;
     }
-__DEP_EHDR(elf_file);
-__DEP_SHDR(elf_file);
-__DEP_SHSTRTAB(elf_file);
+  } else {
+    shstrndx = elf_file->ehdr.ehdr32.e_shstrndx;
+    if (elf_file->shstrtab && shstrndx < shnum && elf_file->shdr.shdr32) {
+      shstrsize = elf_file->shdr.shdr32[shstrndx].sh_size;
+    }
+  }
 
-    uint16_t shnum;
-    uint64_t shoff;
+  for (uint16_t i = 0; i < shnum; i++) {
+    const char *name = "";
+    uint32_t sh_type;
+    uint64_t sh_addr, sh_offset, sh_size, sh_entsize, sh_addralign;
+    uint32_t sh_flags;
+    uint32_t sh_link, sh_info;
 
-    if (elf_file->elf_class == ELFCLASS64){
-        shnum = elf_file->ehdr.ehdr64.e_shnum;
-        shoff = elf_file->ehdr.ehdr64.e_shoff;
+    if (elf_file->elf_class == ELFCLASS64) {
+      Elf64_Shdr *shdr = &elf_file->shdr.shdr64[i];
+      if (elf_file->shstrtab && shdr->sh_name < shstrsize) {
+        name = &elf_file->shstrtab[shdr->sh_name];
+      }
+      sh_type = shdr->sh_type;
+      sh_addr = shdr->sh_addr;
+      sh_offset = shdr->sh_offset;
+      sh_size = shdr->sh_size;
+      sh_entsize = shdr->sh_entsize;
+      sh_flags = shdr->sh_flags;
+      sh_link = shdr->sh_link;
+      sh_info = shdr->sh_info;
+      sh_addralign = shdr->sh_addralign;
     } else {
-        shnum = elf_file->ehdr.ehdr32.e_shnum;
-        shoff = elf_file->ehdr.ehdr32.e_shoff;
+      Elf32_Shdr *shdr = &elf_file->shdr.shdr32[i];
+      if (elf_file->shstrtab && shdr->sh_name < shstrsize) {
+        name = &elf_file->shstrtab[shdr->sh_name];
+      }
+      sh_type = shdr->sh_type;
+      sh_addr = shdr->sh_addr;
+      sh_offset = shdr->sh_offset;
+      sh_size = shdr->sh_size;
+      sh_entsize = shdr->sh_entsize;
+      sh_flags = shdr->sh_flags;
+      sh_link = shdr->sh_link;
+      sh_info = shdr->sh_info;
+      sh_addralign = shdr->sh_addralign;
     }
 
-    printf("There are %d section headers, starting at offset 0x%lx:\n", 
-        shnum, shoff);
-    fputc('\n', stdout);
-    fputs("Section Headers:\n", stdout);
+    const char *type_str = get_section_type_name(sh_type);
+    char flags_str[32];
+    char name_buf[32];
+    format_section_flags(flags_str, sizeof(flags_str), sh_flags);
+    format_section_name(name_buf, sizeof(name_buf), name);
 
-    printf("  [Nr] %-*s %-*s  %-*s  %-*s\n", 
-        NAME_STR_ALIGN, "Name", TYPE_STR_ALIGN, "Type", 
-        ADDRESS_STR_ALIGN, "Address", OFFSET_STR_ALIGN, "Offset");
-    printf("%*s%-*s  %-*s  %-*s  %-*s  %-*s  %-*s\n", 
-        7, " ",
-        SIZE_STR_ALIGN, "Size", ENT_SIZE_STR_ALIGN, "EntSize", 
-        FLAGS_STR_ALIGN, "Flags", LINK_STR_ALIGN, "Link", 
-        INFO_STR_ALIGN, "Info", ALIGN_STR_ALIGN, "Align");
-
-    if (!elf_file->shdr.shdr64 
-        && !elf_file->shdr.shdr32) return;
-
-    uint16_t shstrndx;
-    uint64_t shstrsize = 0;
-    if (elf_file->elf_class == ELFCLASS64){
-        shstrndx = elf_file->ehdr.ehdr64.e_shstrndx;
-        if (elf_file->shstrtab && shstrndx < shnum && 
-            elf_file->shdr.shdr64) {
-            shstrsize = elf_file->shdr.shdr64[shstrndx].sh_size;
-        }
+    if (elf_file->elf_class == ELFCLASS64) {
+      printf("  [%2u] %s %-*s  %016lx  %08lx\n", i, name_buf, TYPE_STR_ALIGN,
+             type_str, sh_addr, sh_offset);
+      printf("%*s%016lx  %016lx  %*s%*s  %*u  %*u  %*lu\n", 7, " ", sh_size,
+             sh_entsize, FLAGS_STR_ALIGN - 2, flags_str, 2, " ", LINK_STR_ALIGN,
+             sh_link, INFO_STR_ALIGN, sh_info, ALIGN_STR_ALIGN, sh_addralign);
     } else {
-        shstrndx = elf_file->ehdr.ehdr32.e_shstrndx;
-        if (elf_file->shstrtab && shstrndx < shnum && 
-            elf_file->shdr.shdr32) {
-            shstrsize = elf_file->shdr.shdr32[shstrndx].sh_size;
-        }
+      printf("  [%2u] %s %-*s  %08x  %08lx\n", i, name_buf, TYPE_STR_ALIGN,
+             type_str, (unsigned)sh_addr, sh_offset);
+      printf("%*s%08lx  %08lx  %*s%*s  %*u  %*u  %*u\n", 7, " ", sh_size,
+             sh_entsize, FLAGS_STR_ALIGN - 2, flags_str, 2, " ", LINK_STR_ALIGN,
+             sh_link, INFO_STR_ALIGN, sh_info, ALIGN_STR_ALIGN,
+             (unsigned)sh_addralign);
     }
+  }
 
-    for (uint16_t i = 0; i < shnum; i++) {
-        const char *name = "";
-        uint32_t sh_type;
-        uint64_t sh_addr, sh_offset, sh_size, sh_entsize, sh_addralign;
-        uint32_t sh_flags;
-        uint32_t sh_link, sh_info;
-
-        if (elf_file->elf_class == ELFCLASS64) {
-            Elf64_Shdr *shdr = &elf_file->shdr.shdr64[i];
-            if (elf_file->shstrtab && shdr->sh_name < shstrsize) {
-                name = &elf_file->shstrtab[shdr->sh_name];
-            }
-            sh_type = shdr->sh_type;
-            sh_addr = shdr->sh_addr;
-            sh_offset = shdr->sh_offset;
-            sh_size = shdr->sh_size;
-            sh_entsize = shdr->sh_entsize;
-            sh_flags = shdr->sh_flags;
-            sh_link = shdr->sh_link;
-            sh_info = shdr->sh_info;
-            sh_addralign = shdr->sh_addralign;
-        } else {
-            Elf32_Shdr *shdr = &elf_file->shdr.shdr32[i];
-            if (elf_file->shstrtab && shdr->sh_name < shstrsize) {
-                name = &elf_file->shstrtab[shdr->sh_name];
-            }
-            sh_type = shdr->sh_type;
-            sh_addr = shdr->sh_addr;
-            sh_offset = shdr->sh_offset;
-            sh_size = shdr->sh_size;
-            sh_entsize = shdr->sh_entsize;
-            sh_flags = shdr->sh_flags;
-            sh_link = shdr->sh_link;
-            sh_info = shdr->sh_info;
-            sh_addralign = shdr->sh_addralign;
-        }
-
-        const char *type_str = get_section_type_name(sh_type);
-        char flags_str[32];
-        char name_buf[32];
-        format_section_flags(flags_str, sizeof(flags_str), sh_flags);
-        format_section_name(name_buf, sizeof(name_buf), name);
-
-        if (elf_file->elf_class == ELFCLASS64) {
-            printf("  [%2u] %s %-*s  %016lx  %08lx\n", 
-                i, name_buf, TYPE_STR_ALIGN, type_str, sh_addr, sh_offset);
-            printf("%*s%016lx  %016lx  %*s%*s  %*u  %*u  %*lu\n",
-                7, " ",
-                sh_size, sh_entsize, 
-                FLAGS_STR_ALIGN - 2, flags_str,
-                2, " ", 
-                LINK_STR_ALIGN, sh_link, 
-                INFO_STR_ALIGN, sh_info,
-                ALIGN_STR_ALIGN, sh_addralign);
-        } else {
-            printf("  [%2u] %s %-*s  %08x  %08lx\n", 
-                i, name_buf, TYPE_STR_ALIGN, type_str, (unsigned)sh_addr, sh_offset);
-            printf("%*s%08lx  %08lx  %*s%*s  %*u  %*u  %*u\n",
-                7, " ",
-                sh_size, sh_entsize, 
-                FLAGS_STR_ALIGN - 2, flags_str,
-                2, " ", 
-                LINK_STR_ALIGN, sh_link, 
-                INFO_STR_ALIGN, sh_info, 
-                ALIGN_STR_ALIGN, (unsigned)sh_addralign);
-        }
-    }
-    
-    print_flags_key();
+  print_flags_key();
 }

@@ -15,32 +15,32 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <stdio.h>
 #include <readelf.h>
+#include <stdio.h>
 #include <stdlib.h>
 
 /**
  * @brief: parse the relocation entries from the ELF file
- * 
+ *
  * @note: not implemented
  * for current version of the readelf, the rela section is not supported
  * Just left the implementation as blank for structure consistency
  */
 
-void elf_parse_rela(_elf_meta *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
-    }
-    /* Not implemented */
-    elf_file->flags |= _ELF_RELA_FLAG;
-    return;
+void elf_parse_rela(_elf_meta *elf_file) {
+  if (elf_file->fd == -1) {
+    perror("readelf: file not open");
+    exit(EXIT_FAILURE);
+  }
+  /* Not implemented */
+  elf_file->flags |= _ELF_RELA_FLAG;
+  return;
 }
 
-void elf_print_rela(_elf_meta *elf_file){
-    if (elf_file->fd == -1) {
-        perror("readelf: file not open");
-        exit(EXIT_FAILURE);
-    }
-    /* Not implemented */
+void elf_print_rela(_elf_meta *elf_file) {
+  if (elf_file->fd == -1) {
+    perror("readelf: file not open");
+    exit(EXIT_FAILURE);
+  }
+  /* Not implemented */
 }

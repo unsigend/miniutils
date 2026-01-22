@@ -17,6 +17,4 @@
 
 #include <readelf.h>
 
-int main(int argc, char *argv[]){
-    return readelf(argc - 1, argv + 1);
-}
+int main(int argc, char *argv[]) { return readelf(argc - 1, argv + 1); }
