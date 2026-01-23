@@ -15,50 +15,37 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <common.h>
 #include <readelf.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#define _PANIC()          \
-  {                       \
-    do {                  \
-      perror("readelf");  \
-      exit(EXIT_FAILURE); \
-    } while (0);          \
-  }
 
 static const char *get_elf_type(unsigned type) {
   switch (type) {
-    case ET_NONE:
-      return "NONE (No file type)";
-    case ET_REL:
-      return "REL (Relocatable file)";
-    case ET_EXEC:
-      return "EXEC (Executable file)";
-    case ET_DYN:
-      return "DYN (Shared object file)";
-    case ET_CORE:
-      return "CORE (Core file)";
-    case ET_LOOS:
-      return "LOOS (Operating system-specific)";
-    case ET_HIOS:
-      return "HIOS (Operating system-specific)";
-    case ET_LOPROC:
-      return "LOPROC (Processor-specific)";
-    case ET_HIPROC:
-      return "HIPROC (Processor-specific)";
+  case ET_NONE:
+    return "NONE (No file type)";
+  case ET_REL:
+    return "REL (Relocatable file)";
+  case ET_EXEC:
+    return "EXEC (Executable file)";
+  case ET_DYN:
+    return "DYN (Shared object file)";
+  case ET_CORE:
+    return "CORE (Core file)";
+  case ET_LOOS:
+    return "LOOS (Operating system-specific)";
+  case ET_HIOS:
+    return "HIOS (Operating system-specific)";
+  case ET_LOPROC:
+    return "LOPROC (Processor-specific)";
+  case ET_HIPROC:
+    return "HIPROC (Processor-specific)";
   }
   return "Unknown";
 }
 
 void elf_parse_phdr(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __GUARD_PHDR(elf_file);
   __DEP_EHDR(elf_file);
 
@@ -88,20 +75,25 @@ void elf_parse_phdr(_elf_meta *elf_file) {
 
   if (elf_file->elf_class == ELFCLASS64) {
     elf_file->phdr.phdr64 = (Elf64_Phdr *)malloc(phsize * phnum);
-    if (!elf_file->phdr.phdr64) _PANIC();
+    if (!elf_file->phdr.phdr64)
+      exitErrno("readelf");
   } else {
     elf_file->phdr.phdr32 = (Elf32_Phdr *)malloc(phsize * phnum);
-    if (!elf_file->phdr.phdr32) _PANIC();
+    if (!elf_file->phdr.phdr32)
+      exitErrno("readelf");
   }
 
-  if (lseek(elf_file->fd, phoff, SEEK_SET) == -1) _PANIC();
+  if (lseek(elf_file->fd, phoff, SEEK_SET) == -1)
+    exitErrno("readelf");
 
   if (elf_file->elf_class == ELFCLASS64) {
     ssize_t nbytes = read(elf_file->fd, elf_file->phdr.phdr64, phsize * phnum);
-    if (nbytes == -1 || (size_t)nbytes != phsize * phnum) _PANIC();
+    if (nbytes == -1 || (size_t)nbytes != phsize * phnum)
+      exitErrno("readelf");
   } else {
     ssize_t nbytes = read(elf_file->fd, elf_file->phdr.phdr32, phsize * phnum);
-    if (nbytes == -1 || (size_t)nbytes != phsize * phnum) _PANIC();
+    if (nbytes == -1 || (size_t)nbytes != phsize * phnum)
+      exitErrno("readelf");
   }
 
   elf_file->flags |= _ELF_PHDR_FLAG;
@@ -109,42 +101,44 @@ void elf_parse_phdr(_elf_meta *elf_file) {
 
 static const char *get_phdr_type_name(uint32_t type) {
   switch (type) {
-    case PT_NULL:
-      return "NULL";
-    case PT_LOAD:
-      return "LOAD";
-    case PT_DYNAMIC:
-      return "DYNAMIC";
-    case PT_INTERP:
-      return "INTERP";
-    case PT_NOTE:
-      return "NOTE";
-    case PT_SHLIB:
-      return "SHLIB";
-    case PT_PHDR:
-      return "PHDR";
-    case PT_TLS:
-      return "TLS";
-    case PT_LOOS:
-      return "LOOS";
-    case PT_HIOS:
-      return "HIOS";
-    case PT_LOPROC:
-      return "LOPROC";
-    case PT_HIPROC:
-      return "HIPROC";
-    case PT_GNU_EH_FRAME:
-      return "GNU_EH_FRAME";
-    case PT_GNU_STACK:
-      return "GNU_STACK";
-    case PT_GNU_RELRO:
-      return "GNU_RELRO";
-    case PT_GNU_PROPERTY:
-      return "GNU_PROPERTY";
-    default:
-      if (type >= PT_LOOS && type <= PT_HIOS) return "OS";
-      if (type >= PT_LOPROC && type <= PT_HIPROC) return "PROC";
-      return "UNKNOWN";
+  case PT_NULL:
+    return "NULL";
+  case PT_LOAD:
+    return "LOAD";
+  case PT_DYNAMIC:
+    return "DYNAMIC";
+  case PT_INTERP:
+    return "INTERP";
+  case PT_NOTE:
+    return "NOTE";
+  case PT_SHLIB:
+    return "SHLIB";
+  case PT_PHDR:
+    return "PHDR";
+  case PT_TLS:
+    return "TLS";
+  case PT_LOOS:
+    return "LOOS";
+  case PT_HIOS:
+    return "HIOS";
+  case PT_LOPROC:
+    return "LOPROC";
+  case PT_HIPROC:
+    return "HIPROC";
+  case PT_GNU_EH_FRAME:
+    return "GNU_EH_FRAME";
+  case PT_GNU_STACK:
+    return "GNU_STACK";
+  case PT_GNU_RELRO:
+    return "GNU_RELRO";
+  case PT_GNU_PROPERTY:
+    return "GNU_PROPERTY";
+  default:
+    if (type >= PT_LOOS && type <= PT_HIOS)
+      return "OS";
+    if (type >= PT_LOPROC && type <= PT_HIPROC)
+      return "PROC";
+    return "UNKNOWN";
   }
 }
 
@@ -153,20 +147,23 @@ static const char *get_phdr_type_name(uint32_t type) {
 #define PERM_EXEC "E"
 static void format_phdr_flags(char *buf, size_t size, uint32_t flags) {
   buf[0] = '\0';
-  if (flags & PF_R) strncat(buf, PERM_READ, size - strlen(buf) - 1);
-  if (flags & PF_W) strncat(buf, PERM_WRITE, size - strlen(buf) - 1);
+  if (flags & PF_R)
+    strncat(buf, PERM_READ, size - strlen(buf) - 1);
+  if (flags & PF_W)
+    strncat(buf, PERM_WRITE, size - strlen(buf) - 1);
   if (flags & PF_X) {
-    if (buf[0] != '\0') strncat(buf, " ", size - strlen(buf) - 1);
+    if (buf[0] != '\0')
+      strncat(buf, " ", size - strlen(buf) - 1);
     strncat(buf, PERM_EXEC, size - strlen(buf) - 1);
   }
-  if (buf[0] == '\0') strncpy(buf, "  ", size - 1);
+  if (buf[0] == '\0')
+    strncpy(buf, "  ", size - 1);
 }
 
 void elf_print_phdr(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __DEP_EHDR(elf_file);
   __DEP_PHDR(elf_file);
 
@@ -196,9 +193,8 @@ void elf_print_phdr(_elf_meta *elf_file) {
   putc('\n', stdout);
   puts("Program Headers:");
   printf("  Type           Offset             VirtAddr           PhysAddr\n");
-  printf(
-      "                 FileSiz            MemSiz              Flags  "
-      "Align\n");
+  printf("                 FileSiz            MemSiz              Flags  "
+         "Align\n");
 
   uint16_t phnum;
   if (elf_file->elf_class == ELFCLASS64) {

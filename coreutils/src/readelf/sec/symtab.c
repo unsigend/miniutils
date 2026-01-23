@@ -15,52 +15,39 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <common.h>
 #include <readelf.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #define PADDING " "
-#define __VIS(vis)                      \
-  (vis == STV_DEFAULT     ? "DEFAULT"   \
-   : vis == STV_INTERNAL  ? "INTERNAL"  \
-   : vis == STV_HIDDEN    ? "HIDDEN"    \
-   : vis == STV_PROTECTED ? "PROTECTED" \
+#define __VIS(vis)                                                             \
+  (vis == STV_DEFAULT     ? "DEFAULT"                                          \
+   : vis == STV_INTERNAL  ? "INTERNAL"                                         \
+   : vis == STV_HIDDEN    ? "HIDDEN"                                           \
+   : vis == STV_PROTECTED ? "PROTECTED"                                        \
                           : "UNKNOWN")
-#define __BIND(bind)               \
-  (bind == STB_LOCAL    ? "LOCAL"  \
-   : bind == STB_GLOBAL ? "GLOBAL" \
-   : bind == STB_WEAK   ? "WEAK"   \
+#define __BIND(bind)                                                           \
+  (bind == STB_LOCAL    ? "LOCAL"                                              \
+   : bind == STB_GLOBAL ? "GLOBAL"                                             \
+   : bind == STB_WEAK   ? "WEAK"                                               \
                         : "UNKNOWN")
-#define __TYPE(type)                 \
-  (type == STT_NOTYPE    ? "NOTYPE"  \
-   : type == STT_OBJECT  ? "OBJECT"  \
-   : type == STT_FUNC    ? "FUNC"    \
-   : type == STT_SECTION ? "SECTION" \
-   : type == STT_FILE    ? "FILE"    \
+#define __TYPE(type)                                                           \
+  (type == STT_NOTYPE    ? "NOTYPE"                                            \
+   : type == STT_OBJECT  ? "OBJECT"                                            \
+   : type == STT_FUNC    ? "FUNC"                                              \
+   : type == STT_SECTION ? "SECTION"                                           \
+   : type == STT_FILE    ? "FILE"                                              \
                          : "UNKNOWN")
-#define __NDX(ndx)              \
-  (ndx == STN_UNDEF    ? "UND"  \
-   : ndx == STN_ABS    ? "ABS"  \
-   : ndx == STN_COMMON ? "COMM" \
-   : ndx == STN_TLS    ? "TLS"  \
+#define __NDX(ndx)                                                             \
+  (ndx == STN_UNDEF    ? "UND"                                                 \
+   : ndx == STN_ABS    ? "ABS"                                                 \
+   : ndx == STN_COMMON ? "COMM"                                                \
+   : ndx == STN_TLS    ? "TLS"                                                 \
                        : "UND")
 
-#define _PANIC()          \
-  {                       \
-    do {                  \
-      perror("readelf");  \
-      exit(EXIT_FAILURE); \
-    } while (0);          \
-  }
-
 void elf_parse_symtab(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __GUARD_SYMTAB(elf_file);
   __DEP_EHDR(elf_file);
   __DEP_SHDR(elf_file);
@@ -98,19 +85,24 @@ void elf_parse_symtab(_elf_meta *elf_file) {
 
   if (elf_file->elf_class == ELFCLASS64) {
     elf_file->symtab.symtab64 = (Elf64_Sym *)malloc(symsize);
-    if (!elf_file->symtab.symtab64) _PANIC();
+    if (!elf_file->symtab.symtab64)
+      exitErrno("readelf");
   } else {
     elf_file->symtab.symtab32 = (Elf32_Sym *)malloc(symsize);
-    if (!elf_file->symtab.symtab32) _PANIC();
+    if (!elf_file->symtab.symtab32)
+      exitErrno("readelf");
   }
 
-  if (lseek(elf_file->fd, symoff, SEEK_SET) == -1) _PANIC();
+  if (lseek(elf_file->fd, symoff, SEEK_SET) == -1)
+    exitErrno("readelf");
   if (elf_file->elf_class == ELFCLASS64) {
     ssize_t nb = read(elf_file->fd, elf_file->symtab.symtab64, symsize);
-    if (nb == -1 || (size_t)nb != symsize) _PANIC();
+    if (nb == -1 || (size_t)nb != symsize)
+      exitErrno("readelf");
   } else {
     ssize_t nb = read(elf_file->fd, elf_file->symtab.symtab32, symsize);
-    if (nb == -1 || (size_t)nb != symsize) _PANIC();
+    if (nb == -1 || (size_t)nb != symsize)
+      exitErrno("readelf");
   }
 
   elf_file->symtab_sz = symsize;
@@ -118,17 +110,19 @@ void elf_parse_symtab(_elf_meta *elf_file) {
 }
 
 static const char *get_section_index_str(uint16_t ndx) {
-  if (ndx == SHN_UNDEF) return "UND";
-  if (ndx == SHN_ABS) return "ABS";
-  if (ndx == SHN_COMMON) return "COMM";
+  if (ndx == SHN_UNDEF)
+    return "UND";
+  if (ndx == SHN_ABS)
+    return "ABS";
+  if (ndx == SHN_COMMON)
+    return "COMM";
   return NULL;
 }
 
 void elf_print_symtab(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __DEP_SYMTAB(elf_file);
   __DEP_STRTAB(elf_file);
 

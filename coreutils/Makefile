@@ -30,9 +30,9 @@ DEP_DIR				:=	$(BUILD_DIR)/dep
 LIB_DIR				:=	$(ROOT_DIR)/build/lib
 BIN_DIR				:=	$(ROOT_DIR)/build/bin
 
-# Module directories and names
+# Module directories and names (exclude common as it's a library directory)
 MODULE_DIRS			:=	$(wildcard $(SRC_DIR)/*/)
-MODULE_NAMES		:=	$(patsubst $(SRC_DIR)/%/,%,$(MODULE_DIRS))
+MODULE_NAMES		:=	$(filter-out common,$(patsubst $(SRC_DIR)/%/,%,$(MODULE_DIRS)))
 
 # Recursively find all .c files under src/ maintaining directory structure
 COREUTILS_SRC_FILES	:=	$(shell find $(SRC_DIR) -type f -name "*.c")
@@ -105,7 +105,7 @@ $(LIB_DIR)/libcoreutils.a: $(COREUTILS_OBJ_NO_MAIN) $(EXTERNAL_OBJ_FILES)
 	@$(AR) rcs $@ $^
 
 # Shared library
-$(LIB_DIR)/libcoreutils$(SHARED_LIB_POSTFIX): $(COREUTILS_OBJ_FILES) $(EXTERNAL_OBJ_FILES)
+$(LIB_DIR)/libcoreutils$(SHARED_LIB_POSTFIX): $(COREUTILS_OBJ_NO_MAIN) $(EXTERNAL_OBJ_FILES)
 	@echo " + LD\t$@"
 	@$(CC) -shared -o $@ $^
 

@@ -15,28 +15,14 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <common.h>
 #include <ctype.h>
 #include <readelf.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-
-#define _PANIC()          \
-  {                       \
-    do {                  \
-      perror("readelf");  \
-      exit(EXIT_FAILURE); \
-    } while (0);          \
-  }
 
 static void dump_sec(_elf_meta *elf_file, const char *name, uint64_t offset,
                      uint64_t size) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
 
   if (size == 0) {
     fprintf(stderr, "readelf: Warning: Section '%s' has no data to dump\n",
@@ -45,9 +31,12 @@ static void dump_sec(_elf_meta *elf_file, const char *name, uint64_t offset,
   }
 
   char *data = (char *)malloc(size);
-  if (!data) _PANIC();
-  if (lseek(elf_file->fd, offset, SEEK_SET) == -1) _PANIC();
-  if ((uint64_t)read(elf_file->fd, data, size) != size) _PANIC();
+  if (!data)
+    exitErrno("readelf");
+  if (lseek(elf_file->fd, offset, SEEK_SET) == -1)
+    exitErrno("readelf");
+  if ((uint64_t)read(elf_file->fd, data, size) != size)
+    exitErrno("readelf");
 
   printf("\nString dump of section '%s':\n", name);
 
@@ -58,7 +47,8 @@ static void dump_sec(_elf_meta *elf_file, const char *name, uint64_t offset,
     while (off < size && data[off] == '\0') {
       off++;
     }
-    if (off >= size) break;
+    if (off >= size)
+      break;
     // printable character
     if (isprint((unsigned char)data[off])) {
       uint32_t start = off;
@@ -70,7 +60,8 @@ static void dump_sec(_elf_meta *elf_file, const char *name, uint64_t offset,
         printf("  [%6x]  ", start);
         for (uint32_t i = start; i < off && i < size; i++) {
           unsigned char c = (unsigned char)data[i];
-          if (c == '\0') break;
+          if (c == '\0')
+            break;
           if (isprint(c)) {
             putchar(c);
           }
@@ -82,7 +73,8 @@ static void dump_sec(_elf_meta *elf_file, const char *name, uint64_t offset,
         }
         putchar('\n');
       }
-      if (off < size && data[off] == '\0') off++;
+      if (off < size && data[off] == '\0')
+        off++;
     } else
       off++;
   }
@@ -92,10 +84,8 @@ static void dump_sec(_elf_meta *elf_file, const char *name, uint64_t offset,
 }
 
 void elf_dump_section(_elf_meta *elf_file, const char *sh_name_idx) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
 
   __DEP_EHDR(elf_file);
   __DEP_SHDR(elf_file);

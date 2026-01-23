@@ -15,21 +15,24 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <common.h>
-#include <readelf.h>
+#ifndef _COREUTILS_COMMON_H
+#define _COREUTILS_COMMON_H
 
-void elf_parse_dyn(_elf_meta *elf_file) {
-  if (elf_file->fd == -1)
-    exitMsg("readelf: file not open");
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <unistd.h>
+#include <fcntl.h>
+#include <stdnoreturn.h>
+#include <sys/types.h>
 
-  /* Not implemented */
-  elf_file->flags |= _ELF_DYN_FLAG;
-  return;
-}
+#define min(a, b) ((a) < (b) ? (a) : (b))
+#define max(a, b) ((a) > (b) ? (a) : (b))
 
-void elf_print_dyn(_elf_meta *elf_file) {
-  if (elf_file->fd == -1)
-    exitMsg("readelf: file not open");
+extern noreturn void exitErrno(const char *msg);
+extern noreturn void exitMsg(const char *msg);
 
-  /* Not implemented */
-}
+
+#endif

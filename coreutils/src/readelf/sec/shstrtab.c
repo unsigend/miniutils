@@ -14,25 +14,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include <common.h>
 #include <readelf.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-
-#define _PANIC()          \
-  {                       \
-    do {                  \
-      perror("readelf");  \
-      exit(EXIT_FAILURE); \
-    } while (0);          \
-  }
 
 void elf_parse_shstrtab(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __GUARD_SHSTRTAB(elf_file);
   __DEP_EHDR(elf_file);
 
@@ -74,10 +62,12 @@ void elf_parse_shstrtab(_elf_meta *elf_file) {
 
   elf_file->shstrtab = (char *)malloc(shstrsize);
 
-  if (!elf_file->shstrtab) _PANIC();
-  if (lseek(elf_file->fd, shstroff, SEEK_SET) == -1) _PANIC();
+  if (!elf_file->shstrtab)
+    exitErrno("readelf");
+  if (lseek(elf_file->fd, shstroff, SEEK_SET) == -1)
+    exitErrno("readelf");
   if ((uint64_t)read(elf_file->fd, elf_file->shstrtab, shstrsize) != shstrsize)
-    _PANIC();
+    exitErrno("readelf");
 
   elf_file->flags |= _ELF_SHSTRTAB_FLAG;
 }

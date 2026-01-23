@@ -16,13 +16,9 @@
  */
 
 #include <argparse.h>
-#include <fcntl.h>
+#include <common.h>
 #include <readelf.h>
 #include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 static bool FLAG_HEADER = false;
 static bool FLAG_SECTION_HEADERS = false;
@@ -77,6 +73,17 @@ void elf_struct_cleanup(_elf_meta *elf_file) {
     close(elf_file->fd);
     elf_file->fd = -1;
   }
+  // section header string table
+  if (elf_file->shstrtab) {
+    free(elf_file->shstrtab);
+    elf_file->shstrtab = NULL;
+  }
+  // string table
+  if (elf_file->shstrtab) {
+    free(elf_file->shstrtab);
+    elf_file->shstrtab = NULL;
+  }
+  // section header table
   if (elf_file->elf_class == ELFCLASS64 && elf_file->shdr.shdr64) {
     free(elf_file->shdr.shdr64);
     elf_file->shdr.shdr64 = NULL;
@@ -85,9 +92,23 @@ void elf_struct_cleanup(_elf_meta *elf_file) {
     free(elf_file->shdr.shdr32);
     elf_file->shdr.shdr32 = NULL;
   }
-  if (elf_file->shstrtab) {
-    free(elf_file->shstrtab);
-    elf_file->shstrtab = NULL;
+  // symbol table
+  if (elf_file->symtab.symtab64) {
+    free(elf_file->symtab.symtab64);
+    elf_file->symtab.symtab64 = NULL;
+  }
+  if (elf_file->symtab.symtab32) {
+    free(elf_file->symtab.symtab32);
+    elf_file->symtab.symtab32 = NULL;
+  }
+  // program header table
+  if (elf_file->phdr.phdr64) {
+    free(elf_file->phdr.phdr64);
+    elf_file->phdr.phdr64 = NULL;
+  }
+  if (elf_file->phdr.phdr32) {
+    free(elf_file->phdr.phdr32);
+    elf_file->phdr.phdr32 = NULL;
   }
 }
 
@@ -108,10 +129,9 @@ int readelf(int argc, char *argv[]) {
     return EXIT_FAILURE;
   } else {
     _elf_meta elf_file;
-    if (elf_struct_init(&elf_file, argparse._argv[0]) == -1) {
-      perror("readelf");
-      return EXIT_FAILURE;
-    }
+    if (elf_struct_init(&elf_file, argparse._argv[0]) == -1)
+      exitErrno("readelf");
+
     if (FLAG_ALL) {
       FLAG_HEADER = true;
       FLAG_SYMBOLS = true;
@@ -120,13 +140,20 @@ int readelf(int argc, char *argv[]) {
       FLAG_SECTION_HEADERS = true;
       FLAG_PROGRAM_HEADERS = true;
     }
-    if (FLAG_HEADER) elf_print_ehdr(&elf_file);
-    if (FLAG_SECTION_HEADERS) elf_print_shdr(&elf_file);
-    if (FLAG_PROGRAM_HEADERS) elf_print_phdr(&elf_file);
-    if (FLAG_DYNAMIC) elf_print_dyn(&elf_file);
-    if (FLAG_RELOCS) elf_print_rela(&elf_file);
-    if (FLAG_SYMBOLS) elf_print_symtab(&elf_file);
-    if (FLAG_STRING_DUMP) elf_dump_section(&elf_file, FLAG_STRING_DUMP);
+    if (FLAG_HEADER)
+      elf_print_ehdr(&elf_file);
+    if (FLAG_SECTION_HEADERS)
+      elf_print_shdr(&elf_file);
+    if (FLAG_PROGRAM_HEADERS)
+      elf_print_phdr(&elf_file);
+    if (FLAG_DYNAMIC)
+      elf_print_dyn(&elf_file);
+    if (FLAG_RELOCS)
+      elf_print_rela(&elf_file);
+    if (FLAG_SYMBOLS)
+      elf_print_symtab(&elf_file);
+    if (FLAG_STRING_DUMP)
+      elf_dump_section(&elf_file, FLAG_STRING_DUMP);
 
     elf_struct_cleanup(&elf_file);
   }

@@ -14,28 +14,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
+#include <common.h>
 #include <readelf.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #define STR_ALIGN 6
 
-#define _PANIC()          \
-  {                       \
-    do {                  \
-      perror("readelf");  \
-      exit(EXIT_FAILURE); \
-    } while (0);          \
-  }
-
 void elf_parse_strtab(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __GUARD_STRTAB(elf_file)
   __DEP_EHDR(elf_file)
   __DEP_SHDR(elf_file)
@@ -71,10 +58,12 @@ void elf_parse_strtab(_elf_meta *elf_file) {
   }
 
   elf_file->strtab = (char *)malloc(strtabsize);
-  if (!elf_file->strtab) _PANIC();
-  if (lseek(elf_file->fd, strtaboff, SEEK_SET) == -1) _PANIC();
+  if (!elf_file->strtab)
+    exitErrno("readelf");
+  if (lseek(elf_file->fd, strtaboff, SEEK_SET) == -1)
+    exitErrno("readelf");
   if ((uint64_t)read(elf_file->fd, elf_file->strtab, strtabsize) != strtabsize)
-    _PANIC();
+    exitErrno("readelf");
 
   elf_file->strtab_sz = strtabsize;
   elf_file->flags |= _ELF_STRTAB_FLAG;

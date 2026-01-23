@@ -15,12 +15,8 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <common.h>
 #include <readelf.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
 
 #define INDEX_STR_ALIGN 4
 #define NAME_STR_ALIGN 17
@@ -34,54 +30,48 @@
 #define INFO_STR_ALIGN 4
 #define ALIGN_STR_ALIGN 4
 
-#define _PANIC()          \
-  {                       \
-    do {                  \
-      perror("readelf");  \
-      exit(EXIT_FAILURE); \
-    } while (0);          \
-  }
-
 static const char *get_section_type_name(uint32_t type) {
   switch (type) {
-    case SHT_NULL:
-      return "NULL";
-    case SHT_PROGBITS:
-      return "PROGBITS";
-    case SHT_SYMTAB:
-      return "SYMTAB";
-    case SHT_STRTAB:
-      return "STRTAB";
-    case SHT_RELA:
-      return "RELA";
-    case SHT_HASH:
-      return "HASH";
-    case SHT_DYNAMIC:
-      return "DYNAMIC";
-    case SHT_NOTE:
-      return "NOTE";
-    case SHT_NOBITS:
-      return "NOBITS";
-    case SHT_REL:
-      return "REL";
-    case SHT_SHLIB:
-      return "SHLIB";
-    case SHT_DYNSYM:
-      return "DYNSYM";
-    case SHT_INIT_ARRAY:
-      return "INIT_ARRAY";
-    case SHT_FINI_ARRAY:
-      return "FINI_ARRAY";
-    case SHT_PREINIT_ARRAY:
-      return "PREINIT_ARRAY";
-    case SHT_GROUP:
-      return "GROUP";
-    case SHT_SYMTAB_SHNDX:
-      return "SYMTAB_SHNDX";
-    default:
-      if (type >= SHT_LOOS && type <= SHT_HIOS) return "OS";
-      if (type >= SHT_LOPROC && type <= SHT_HIPROC) return "PROC";
-      return "UNKNOWN";
+  case SHT_NULL:
+    return "NULL";
+  case SHT_PROGBITS:
+    return "PROGBITS";
+  case SHT_SYMTAB:
+    return "SYMTAB";
+  case SHT_STRTAB:
+    return "STRTAB";
+  case SHT_RELA:
+    return "RELA";
+  case SHT_HASH:
+    return "HASH";
+  case SHT_DYNAMIC:
+    return "DYNAMIC";
+  case SHT_NOTE:
+    return "NOTE";
+  case SHT_NOBITS:
+    return "NOBITS";
+  case SHT_REL:
+    return "REL";
+  case SHT_SHLIB:
+    return "SHLIB";
+  case SHT_DYNSYM:
+    return "DYNSYM";
+  case SHT_INIT_ARRAY:
+    return "INIT_ARRAY";
+  case SHT_FINI_ARRAY:
+    return "FINI_ARRAY";
+  case SHT_PREINIT_ARRAY:
+    return "PREINIT_ARRAY";
+  case SHT_GROUP:
+    return "GROUP";
+  case SHT_SYMTAB_SHNDX:
+    return "SYMTAB_SHNDX";
+  default:
+    if (type >= SHT_LOOS && type <= SHT_HIOS)
+      return "OS";
+    if (type >= SHT_LOPROC && type <= SHT_HIPROC)
+      return "PROC";
+    return "UNKNOWN";
   }
 }
 
@@ -89,20 +79,31 @@ static void format_section_flags(char *buf, size_t bufsize, uint32_t flags) {
   size_t pos = 0;
   buf[0] = '\0';
 
-  if (flags & SHF_WRITE) pos += snprintf(buf + pos, bufsize - pos, "W");
-  if (flags & SHF_ALLOC) pos += snprintf(buf + pos, bufsize - pos, "A");
-  if (flags & SHF_EXECINSTR) pos += snprintf(buf + pos, bufsize - pos, "X");
-  if (flags & SHF_MERGE) pos += snprintf(buf + pos, bufsize - pos, "M");
-  if (flags & SHF_STRINGS) pos += snprintf(buf + pos, bufsize - pos, "S");
-  if (flags & SHF_INFO_LINK) pos += snprintf(buf + pos, bufsize - pos, "I");
-  if (flags & SHF_LINK_ORDER) pos += snprintf(buf + pos, bufsize - pos, "L");
+  if (flags & SHF_WRITE)
+    pos += snprintf(buf + pos, bufsize - pos, "W");
+  if (flags & SHF_ALLOC)
+    pos += snprintf(buf + pos, bufsize - pos, "A");
+  if (flags & SHF_EXECINSTR)
+    pos += snprintf(buf + pos, bufsize - pos, "X");
+  if (flags & SHF_MERGE)
+    pos += snprintf(buf + pos, bufsize - pos, "M");
+  if (flags & SHF_STRINGS)
+    pos += snprintf(buf + pos, bufsize - pos, "S");
+  if (flags & SHF_INFO_LINK)
+    pos += snprintf(buf + pos, bufsize - pos, "I");
+  if (flags & SHF_LINK_ORDER)
+    pos += snprintf(buf + pos, bufsize - pos, "L");
   if (flags & SHF_OS_NONCONFORMING)
     pos += snprintf(buf + pos, bufsize - pos, "O");
-  if (flags & SHF_GROUP) pos += snprintf(buf + pos, bufsize - pos, "G");
-  if (flags & SHF_TLS) pos += snprintf(buf + pos, bufsize - pos, "T");
-  if (flags & SHF_COMPRESSED) pos += snprintf(buf + pos, bufsize - pos, "C");
+  if (flags & SHF_GROUP)
+    pos += snprintf(buf + pos, bufsize - pos, "G");
+  if (flags & SHF_TLS)
+    pos += snprintf(buf + pos, bufsize - pos, "T");
+  if (flags & SHF_COMPRESSED)
+    pos += snprintf(buf + pos, bufsize - pos, "C");
 
-  if (pos == 0) snprintf(buf, bufsize, "   ");
+  if (pos == 0)
+    snprintf(buf, bufsize, "   ");
 }
 
 static void format_section_name(char *buf, size_t bufsize, const char *name) {
@@ -115,21 +116,18 @@ static void format_section_name(char *buf, size_t bufsize, const char *name) {
 
 static void print_flags_key(void) {
   printf("Key to Flags:\n");
-  printf(
-      "  W (write), A (alloc), X (execute), M (merge), S (strings), I "
-      "(info),\n");
-  printf(
-      "  L (link order), O (extra OS processing required), G (group), T "
-      "(TLS),\n");
+  printf("  W (write), A (alloc), X (execute), M (merge), S (strings), I "
+         "(info),\n");
+  printf("  L (link order), O (extra OS processing required), G (group), T "
+         "(TLS),\n");
   printf("  C (compressed), x (unknown), o (OS specific), E (exclude),\n");
   printf("  D (mbind), l (large), p (processor specific)\n");
 }
 
 void elf_parse_shdr(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __GUARD_SHDR(elf_file);
   __DEP_EHDR(elf_file);
 
@@ -156,32 +154,36 @@ void elf_parse_shdr(_elf_meta *elf_file) {
 
   if (elf_file->elf_class == ELFCLASS64) {
     elf_file->shdr.shdr64 = (Elf64_Shdr *)malloc(sizeof(Elf64_Shdr) * shnum);
-    if (!elf_file->shdr.shdr64) _PANIC();
+    if (!elf_file->shdr.shdr64)
+      exitErrno("readelf");
   } else {
     elf_file->shdr.shdr32 = (Elf32_Shdr *)malloc(sizeof(Elf32_Shdr) * shnum);
-    if (!elf_file->shdr.shdr32) _PANIC();
+    if (!elf_file->shdr.shdr32)
+      exitErrno("readelf");
   }
 
-  if (lseek(elf_file->fd, shoff, SEEK_SET) == -1) _PANIC();
+  if (lseek(elf_file->fd, shoff, SEEK_SET) == -1)
+    exitErrno("readelf");
 
   if (elf_file->elf_class == ELFCLASS64) {
     ssize_t nb =
         read(elf_file->fd, elf_file->shdr.shdr64, sizeof(Elf64_Shdr) * shnum);
-    if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum) _PANIC();
+    if (nb == -1 || (size_t)nb != sizeof(Elf64_Shdr) * shnum)
+      exitErrno("readelf");
   } else {
     ssize_t nb =
         read(elf_file->fd, elf_file->shdr.shdr32, sizeof(Elf32_Shdr) * shnum);
-    if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum) _PANIC();
+    if (nb == -1 || (size_t)nb != sizeof(Elf32_Shdr) * shnum)
+      exitErrno("readelf");
   }
 
   elf_file->flags |= _ELF_SHDR_FLAG;
 }
 
 void elf_print_shdr(_elf_meta *elf_file) {
-  if (elf_file->fd == -1) {
-    perror("readelf: file not open");
-    exit(EXIT_FAILURE);
-  }
+  if (elf_file->fd == -1)
+    exitMsg("readelf: file not open");
+
   __DEP_EHDR(elf_file);
   __DEP_SHDR(elf_file);
   __DEP_SHSTRTAB(elf_file);
@@ -210,7 +212,8 @@ void elf_print_shdr(_elf_meta *elf_file) {
          LINK_STR_ALIGN, "Link", INFO_STR_ALIGN, "Info", ALIGN_STR_ALIGN,
          "Align");
 
-  if (!elf_file->shdr.shdr64 && !elf_file->shdr.shdr32) return;
+  if (!elf_file->shdr.shdr64 && !elf_file->shdr.shdr32)
+    return;
 
   uint16_t shstrndx;
   uint64_t shstrsize = 0;

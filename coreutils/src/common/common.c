@@ -16,20 +16,13 @@
  */
 
 #include <common.h>
-#include <readelf.h>
 
-void elf_parse_dyn(_elf_meta *elf_file) {
-  if (elf_file->fd == -1)
-    exitMsg("readelf: file not open");
-
-  /* Not implemented */
-  elf_file->flags |= _ELF_DYN_FLAG;
-  return;
+noreturn void exitErrno(const char *msg) {
+  perror(msg);
+  exit(EXIT_FAILURE);
 }
 
-void elf_print_dyn(_elf_meta *elf_file) {
-  if (elf_file->fd == -1)
-    exitMsg("readelf: file not open");
-
-  /* Not implemented */
+noreturn void exitMsg(const char *msg) {
+  fprintf(stderr, "%s\n", msg);
+  exit(EXIT_FAILURE);
 }
