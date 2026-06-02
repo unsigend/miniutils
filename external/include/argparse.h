@@ -1,19 +1,19 @@
 /**
  * MIT License
- * 
- * Copyright (c) 2025 QIU YIXIANG
- * 
+ *
+ * Copyright (c) 2026 YIXIANG QIU
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
  * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
  * copies of the Software, and to permit persons to whom the Software is
  * furnished to do so, subject to the following conditions:
- * 
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
- * 
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
  * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
  * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
  * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
@@ -25,179 +25,134 @@
 #ifndef ARGPARSE_H
 #define ARGPARSE_H
 
-/**
- * @brief: argparse library is part of the util library project
- *         This library is used to parse command line arguments
- * @author:    QIU YIXIANG
- * @copyright: MIT License
- * @version:   1.0
- * 
- * @ref:    https://github.com/cofyc/argparse.git
- */
-
-// compatible with C++
-#ifdef __cplusplus
-extern "C"{
-#endif
-
 #include <stddef.h>
-#include <stdint.h>
+
+/* A lightweight command line argument parser, compatible with GNU/POSIX
+   option parsing style.
+
+   Single value parsing:
+                -f<value> | -f <value> | -abc (for BOOL type)
+                --flag<value> | --flag=<value>
+
+   Multiple values parsing:
+                -I./include -I./arch -I./src
+
+   flag -- stops option parsing, all following arguments are treated as
+   positional arguments. For numeric types, the parser will parse the value and
+   write the result to the destination pointer. If error occurs, when ARG_IGNORE
+   flag is not set, set errstr and exit.
+
+   Note: For LIST type, caller should initialize the list pointer to NULL, and
+   the parser will allocate memory for the list if it is not NULL.
+*/
+
+#define _OPT_END 0
+#define _OPT_INT 1
+#define _OPT_STR 2
+#define _OPT_BOOL 3
+#define _OPT_LONG 4
+#define _OPT_DOUBLE 5
+#define _OPT_LIST 6
+#define _OPT_GROUP 7
+#define _OPT_GROUP_END 8
+
+#define OPT_REQUIRED 0x01 /* require argument */
+#define OPT_OPTIONAL 0x02 /* optional argument */
+#define OPT_NONE 0x00     /* no argument */
+
+/* ignore unknown flags */
+#define ARG_IGNORE 0x01
 
 struct argparse;
-struct argparse_option;
+struct argparse_desc;
+struct argparse_opt;
+struct argparse_list;
 
-/**
- * @brief: the type of the option
- *      ARGPARSE_OPTION_TYPE_GROUP    : the option is a group
- *      ARGPARSE_OPTION_TYPE_GROUP_END: the end of the group
- *      ARGPARSE_OPTION_TYPE_STRING   : the option is a string
- *      ARGPARSE_OPTION_TYPE_INT      : the option is an integer
- *      ARGPARSE_OPTION_TYPE_DOUBLE   : the option is a double
- *      ARGPARSE_OPTION_TYPE_BOOL     : the option is a boolean with no value
- *      ARGPARSE_OPTION_TYPE_END      : the end of the option type
- */
-typedef enum{
-    ARGPARSE_OPTION_TYPE_GROUP,
-    ARGPARSE_OPTION_TYPE_GROUP_END,
-    ARGPARSE_OPTION_TYPE_STRING,
-    ARGPARSE_OPTION_TYPE_INT,
-    ARGPARSE_OPTION_TYPE_DOUBLE,
-    ARGPARSE_OPTION_TYPE_BOOL,
-    ARGPARSE_OPTION_TYPE_END,
-}argparse_option_type;
+#define OPT_DECL(t, s, l, h, d, f, c)                                          \
+  {.sname = s, .lname = l, .type = t, .dest = d, .help = h, .cb = c, .flags = f}
+#define OPT_BOOL(s, l, h, d) OPT_DECL(_OPT_BOOL, s, l, h, d, OPT_NONE, NULL)
+#define OPT_INT(s, l, h, d, f) OPT_DECL(_OPT_INT, s, l, h, d, f, NULL)
+#define OPT_STR(s, l, h, d, f) OPT_DECL(_OPT_STR, s, l, h, d, f, NULL)
+#define OPT_LONG(s, l, h, d, f) OPT_DECL(_OPT_LONG, s, l, h, d, f, NULL)
+#define OPT_DOUBLE(s, l, h, d, f) OPT_DECL(_OPT_DOUBLE, s, l, h, d, f, NULL)
+#define OPT_LIST(s, l, h, d) OPT_DECL(_OPT_LIST, s, l, h, d, OPT_REQUIRED, NULL)
+#define OPT_GROUP(h) OPT_DECL(_OPT_GROUP, '\0', NULL, h, NULL, 0, NULL)
+#define OPT_END() OPT_DECL(_OPT_END, '\0', NULL, NULL, NULL, 0, NULL)
+#define OPT_GROUP_END()                                                        \
+  OPT_DECL(_OPT_GROUP_END, '\0', NULL, NULL, NULL, 0,                          \
+           NULL) /* group end '\n' no-op */
+#define OPT_HELP()                                                             \
+  OPT_DECL(_OPT_BOOL, 'h', "help", "show this help message ", NULL, OPT_NONE,  \
+           argparse_cb_help)
 
-/**
- * @brief: the flag of the argparse
- */
-typedef enum{
-    ARGPARSE_FLAG_IGNORE_UNKNOWN_OPTION = 0x00,
-    ARGPARSE_FLAG_STOP_UNKNOWN_OPTION = 0x01,
-}argparse_flag;
+#define argparse_setflags(ctx, flag) ((ctx)->flags |= (flag)) /* Set flags */
+#define argparse_clrflags(ctx, flag)                                           \
+  ((ctx)->flags &= ~(flag)) /* Clear flags                                     \
+                             */
+#define argparse_getremargc(ctx)                                               \
+  ((ctx)->remlist.sz) /* Get positional arguments count */
+#define argparse_getremargv(ctx)                                               \
+  ((ctx)->remlist.items)                       /* Get positional arguments */
+#define argparse_strerror(ctx) ((ctx)->errstr) /* Get error string */
+#define argparse_getlist(list) ((list)->items) /* Get list items */
+#define argparse_getlistsz(list) ((list)->sz)  /* Get list size */
 
-/**
- * @brief callback function for the argparse
- *        will be called when the option is parsed
- */
-typedef void (*argparse_callback)(struct argparse* this, const struct argparse_option *option);
+/* callback function */
+typedef void (*argparse_cb)(struct argparse *, struct argparse_opt *);
 
-/**
- * @brief: the option struct for the argparse
- * @param _type: the type of the option
- * @param _short_name: the short name of the option
- * @param _long_name: the long name of the option
- * @param _description: the description of the option
- * @param _value: the _value is a pointer to the value to store the option
- * @param _callback: the callback function is called when the option is parsed
- * @param _callback_data: the data that can be used by the callback function
- */
-struct argparse_option{
-    argparse_option_type    _type;
-    const char              _short_name;
-    const char *            _long_name;
-    const char *            _description;
-    void *                  _value;
-    argparse_callback       _callback;
-    intptr_t                _callback_data;
-};
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-/**
- * @brief: the description struct for the argparse
- * @param _description: the description of the program
- * @param _epilog: the epilog at the end of the description
- * @param _usage: the usage of the program
- * @param _program_name: the program name
- */
-struct argparse_description{
-    const char *            _description;
-    const char *            _epilog;
-    const char *            _usage;
-    const char *            _program_name;
-};
+/* Return 0 on success, -1 on error. */
+extern int argparse_init(struct argparse *ctx, struct argparse_opt *opts,
+                         struct argparse_desc *desc);
 
-/**
- * @brief: the argparse struct for the argparse
- * @param _argc: the number of command line arguments
- * @param _argv: the command line arguments
- * @param _option_list: the option list
- * @param _description: the description struct of the program
- * @param _flags: the flags of the argparse
- */
-struct argparse{
-    int                                 _argc;
-    char **                             _argv;
-    const struct argparse_option*       _option_list;
-    const struct argparse_description*  _description;
-    argparse_flag                       _flags;
-};
+/* Parse the command line arguments, no program name is needed. Return 0 on
+   success, -1 on error. And set error string to ctx->errstr. */
+extern int argparse_parse(struct argparse *ctx, int argc, char **argv);
 
-/**
- * @brief: callback function for the argparse
- *         build-in callback functions
- */
+extern void argparse_fini(struct argparse *ctx);
 
-/**
- * @brief: build-in callback function for the help option
- * @note : no side effect, just print the help message
- */
-extern void argparse_callback_help(struct argparse* this, const struct argparse_option *option);
-
-/**
- * @brief: deal with multiple arguments
- * @note: set the _value pointer in the option struct to the data array
- *        set the _callback_data to the size of the array
- */
-extern void argparse_callback_multiple_arguments(struct argparse* this, const struct argparse_option *option);
-
-// Macros for build the option element
-#define OPTION_END()                                                                            \
-    {ARGPARSE_OPTION_TYPE_END, 0, NULL, NULL, NULL, NULL, 0}
-#define OPTION_GROUP(DESCRIPTION)                                                               \
-    {ARGPARSE_OPTION_TYPE_GROUP, 0, NULL, DESCRIPTION, NULL, NULL, 0}
-#define OPTION_GROUP_END()                                                                      \
-    {ARGPARSE_OPTION_TYPE_GROUP_END, 0, NULL, NULL, NULL, NULL, 0}
-#define OPTION_BOOLEAN(SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA)      \
-    {ARGPARSE_OPTION_TYPE_BOOL, SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA}
-#define OPTION_STRING(SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA)       \
-    {ARGPARSE_OPTION_TYPE_STRING, SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA}
-#define OPTION_INT(SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA)          \
-    {ARGPARSE_OPTION_TYPE_INT, SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA}
-#define OPTION_DOUBLE(SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA)       \
-    {ARGPARSE_OPTION_TYPE_DOUBLE, SHORT_NAME, LONG_NAME, DESCRIPTION, VALUE, CALLBACK, CALLBACK_DATA}
-#define OPTION_HELP()                                                                           \
-    OPTION_BOOLEAN('h', "help", "show this help message and exit", NULL, argparse_callback_help, 0)
-
-
-// function declaration
-
-/**
- * @brief:  initialize the argparse
- * @param this: the argparse struct
- * @param option_list: the option list
- * @param description: the description of the program
- */
-extern void argparse_init(struct argparse *this, const struct argparse_option *option_list, 
-    const struct argparse_description *description);
-
-/**
- * @brief: set the flags of the argparse
- * @param this: the argparse struct
- * @param flags: the flags
- */
-extern void argparse_set_flags(struct argparse *this, argparse_flag flags);
-
-/**
- * @brief: parse the command line arguments
- * @param this: the argparse struct
- * @param argc: the number of command line arguments
- * @param argv: the command line arguments
- * 
- * @note: the argv[0] from the main function is not accepted by the argparse
- *        usually call : argparse_parse(this, argc - 1, argv + 1); to ignore the argv[0]
- */
-extern void argparse_parse(struct argparse *this, int argc, char *argv[]);
+/* built-in callback functions */
+extern void argparse_cb_help(struct argparse *, struct argparse_opt *);
 
 #ifdef __cplusplus
 }
 #endif
+
+struct argparse_opt {
+  char sname;
+  const char *lname;
+  int type;
+  void *dest;
+  const char *help;
+  argparse_cb cb;
+  int flags;
+};
+
+struct argparse_desc {
+  const char *prog;
+  const char *desc;
+  const char *usage;
+  const char *epilog;
+};
+
+struct argparse_list {
+  char **items;
+  size_t sz;
+  size_t cap;
+};
+
+struct argparse {
+  struct argparse_opt *opts;
+  struct argparse_desc *desc;
+  char *errstr;
+  struct argparse_list remlist;
+  struct argparse_list **lists;
+  size_t nlists;
+  size_t nlistscap;
+  int flags;
+};
 
 #endif

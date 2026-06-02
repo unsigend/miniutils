@@ -1,5 +1,5 @@
-# mini-coreutils - A minimal set of core utilities for Unix-like systems
-# Copyright (C) 2025 Qiu Yixiang
+# miniutils - A minimal GNU coreutils implementation
+# Copyright (C) 2025 - 2026 Qiu Yixiang
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,94 +13,216 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
 
+CUR_DIR              := .
+SRC_PATH             := $(CUR_DIR)/src
+CORE_SRC_PATH        := $(SRC_PATH)/core
+UTIL_SRC_PATH        := $(SRC_PATH)
+EXTERNAL_SRC_PATH    := $(CUR_DIR)/external/src
+EXTERNAL_INC_PATH 	 := $(CUR_DIR)/external/include
+INCLUDE_PATH         := $(CUR_DIR)/include
+CONFIG_PATH          := $(CUR_DIR)/config
+BUILD_PATH           := $(CUR_DIR)/build
+OBJ_PATH             := $(BUILD_PATH)/obj
+DEP_PATH             := $(BUILD_PATH)/dep
+BIN_PATH             := $(BUILD_PATH)/bin
+LIB_PATH             := $(BUILD_PATH)/lib
+TESTS_PATH           := $(CUR_DIR)/test
 
-# Main Makefile for building mini-coreutils and qsh
-# Designed for kernel development
-# This Makefile only for the root control usage
-# For the sub-makefile, please refer to the sub-Makefile
+include $(CONFIG_PATH)/config.mk
 
-# Include config
-include config/Makefile
+ifeq ($(filter $(LIB_BUILD),static shared),)
+$(error LIB_BUILD must be static or shared (got $(LIB_BUILD)))
+endif
 
-# Directories definitions
-ROOT_DIR  	  :=    .
-UTIL_DIR	  :=	coreutils
-SHELL_DIR	  :=	qsh
-SCRIPT_DIR	  :=	script
-BUILD_DIR	  :=	build
-FULL_PATH     :=  	$(shell pwd)
-EXTERNAL_PATH :=    $(FULL_PATH)/external
+HOST_OS := $(shell uname -s)
 
-# Export variables for sub-makefile
-export CC
-export CXX
-export DEBUG_MODE
-export KERNEL_MODE
-export TOOL_CHAIN_PREFIX
+CORE_SRCS := $(shell find $(CORE_SRC_PATH) -name '*.c' 2>/dev/null | sort)
+EXTERNAL_SRCS := $(shell find $(EXTERNAL_SRC_PATH) -name '*.c' 2>/dev/null | sort)
+UTIL_SRCS := $(wildcard $(UTIL_SRC_PATH)/*.c)
 
-.PHONY: clean all utils qsh help test test-utils test-qsh sync
+CORE_OBJS := $(patsubst $(CORE_SRC_PATH)/%.c,$(OBJ_PATH)/core/%.o,$(CORE_SRCS))
+EXTERNAL_OBJS := $(patsubst $(EXTERNAL_SRC_PATH)/%.c,$(OBJ_PATH)/external/%.o,$(EXTERNAL_SRCS))
+UTIL_OBJS := $(patsubst $(UTIL_SRC_PATH)/%.c,$(OBJ_PATH)/util/%.o,$(UTIL_SRCS))
+UTIL_BINS := $(patsubst $(UTIL_SRC_PATH)/%.c,$(BIN_PATH)/%,$(UTIL_SRCS))
+
+CORE_DEPS := $(patsubst $(CORE_SRC_PATH)/%.c,$(DEP_PATH)/core/%.d,$(CORE_SRCS))
+EXTERNAL_DEPS := $(patsubst $(EXTERNAL_SRC_PATH)/%.c,$(DEP_PATH)/external/%.d,$(EXTERNAL_SRCS))
+UTIL_DEPS := $(patsubst $(UTIL_SRC_PATH)/%.c,$(DEP_PATH)/util/%.d,$(UTIL_SRCS))
+
+ifeq ($(LIB_BUILD),shared)
+ifeq ($(HOST_OS),Darwin)
+LIB_ARTIFACT := $(LIB_PATH)/lib$(LIB_NAME).dylib
+else
+LIB_ARTIFACT := $(LIB_PATH)/lib$(LIB_NAME).so
+endif
+else
+LIB_ARTIFACT := $(LIB_PATH)/lib$(LIB_NAME).a
+endif
+
+CC_FLAGS := -std=c11 -Wall -Wextra -Werror -Wshadow
+CC_FLAGS += -I$(INCLUDE_PATH) -I$(EXTERNAL_INC_PATH)
+ifeq ($(HOST_OS),Linux)
+CC_FLAGS += -D_XOPEN_SOURCE=700
+endif
+ifeq ($(LIB_BUILD),shared)
+CC_FLAGS += -fPIC
+endif
+ifeq ($(DEBUG),1)
+CC_FLAGS += -g -O0
+CC_FLAGS += -fsanitize=address,undefined
+else
+CC_FLAGS += -O2
+endif
+
+LDFLAGS :=
+LDLIBS :=
+
+AR_FLAGS := -rcs
+CC_DEP := -MMD -MP -MF
+
+$(OBJ_PATH)/core/%.o: $(CORE_SRC_PATH)/%.c
+	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/core/$*.d)
+	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/core/$*.d -MT $@ -c $< -o $@
+	@echo "  + CC	$<"
+
+$(OBJ_PATH)/external/%.o: $(EXTERNAL_SRC_PATH)/%.c
+	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/external/$*.d)
+	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/external/$*.d -MT $@ -c $< -o $@
+	@echo "  + CC	$<"
+
+$(OBJ_PATH)/util/%.o: $(UTIL_SRC_PATH)/%.c
+	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/util/$*.d)
+	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/util/$*.d -MT $@ -c $< -o $@
+	@echo "  + CC	$<"
+
+-include $(CORE_DEPS) $(EXTERNAL_DEPS) $(UTIL_DEPS)
+
 .DEFAULT_GOAL := help
+.PHONY: all lib bins clean help create_build_dir list info flags format docker \
+	qsh test unit test-% unit-% clang
 
-# Clean all builds
-clean:
-	@$(MAKE) -C $(UTIL_DIR) clean
-	@$(MAKE) -C $(SHELL_DIR) clean
-	@rm -rf $(BUILD_DIR)
+create_build_dir:
+	@mkdir -p $(OBJ_PATH)/core $(OBJ_PATH)/external $(OBJ_PATH)/util
+	@mkdir -p $(DEP_PATH)/core $(DEP_PATH)/external $(DEP_PATH)/util
+	@mkdir -p $(BIN_PATH) $(LIB_PATH)
 
-# Test all including coreutils and qsh
-test: test-utils test-qsh
+ifeq ($(strip $(CORE_OBJS)),)
+$(LIB_ARTIFACT): create_build_dir
+	@echo "Error: no .c files under $(CORE_SRC_PATH)"
+	@exit 1
+else
+$(LIB_ARTIFACT): create_build_dir $(CORE_OBJS)
+ifeq ($(LIB_BUILD),static)
+	@$(AR) $(AR_FLAGS) $@ $(CORE_OBJS)
+	@echo "  + AR	$@"
+else
+	@$(LD) -shared $(LDFLAGS) -o $@ $(CORE_OBJS) $(LDLIBS)
+	@echo "  + LD	$@"
+endif
+endif
 
-# Build all including coreutils and qsh
-all: utils qsh
+ifeq ($(strip $(UTIL_BINS)),)
+bins: create_build_dir lib
+	@echo "Note: no utility sources in $(UTIL_SRC_PATH)/*.c"
+else
+bins: create_build_dir lib $(UTIL_BINS)
 
-# Build coreutils
-utils:
-	@$(MAKE) -C $(UTIL_DIR) all
+$(UTIL_BINS): $(BIN_PATH)/%: $(OBJ_PATH)/util/%.o $(LIB_ARTIFACT) $(EXTERNAL_OBJS)
+	@$(CC) $(CC_FLAGS) $(LDFLAGS) -o $@ $(OBJ_PATH)/util/$*.o $(LIB_ARTIFACT) $(EXTERNAL_OBJS) $(LDLIBS)
+	@echo "  + LD	$@"
+endif
 
-test-utils:
-	@$(MAKE) -C $(UTIL_DIR) test
+lib: $(LIB_ARTIFACT)
 
-# Build qsh
+all: lib bins
+
 qsh:
-	@$(MAKE) -C $(SHELL_DIR) all
+	@echo "qsh: not implemented yet"
 
-test-qsh:
-	@$(MAKE) -C $(SHELL_DIR) test
+clean:
+	@rm -rf $(BUILD_PATH)
+	@$(MAKE) -C $(TESTS_PATH) clean
 
-# Sync dependency
-sync:
-	@chmod +x $(SCRIPT_DIR)/sync-dep.sh
-	@$(BASH) $(SCRIPT_DIR)/sync-dep.sh
+list:
+	@echo "Core library sources:"
+	@echo $(CORE_SRCS) | tr ' ' '\n' | sed 's/^/  /'
+	@echo "External sources:"
+	@echo $(EXTERNAL_SRCS) | tr ' ' '\n' | sed 's/^/  /'
+	@echo "Utility sources:"
+	@echo $(UTIL_SRCS) | tr ' ' '\n' | sed 's/^/  /'
+	@echo "Utilities:"
+	@echo $(UTIL_BINS) | tr ' ' '\n' | sed 's/^/  /'
 
-# Show help message
+info:
+	@echo "Build configuration"
+	@echo "  LIB_NAME     : $(LIB_NAME)"
+	@echo "  LIB_BUILD    : $(LIB_BUILD)"
+	@echo "  LIB_ARTIFACT : $(LIB_ARTIFACT)"
+	@echo "  DEBUG        : $(DEBUG)"
+	@echo "  HOST_OS      : $(HOST_OS)"
+	@echo ""
+
 help:
-	@echo "USAGE: "
-	@echo "  make all\t\tbuild all including coreutils and qsh"
-	@echo "  make help\t\tshow this help message"
-	@echo "  make utils\t\tbuild coreutils"
-	@echo "  make qsh\t\tbuild qsh"
-	@echo "  make test\t\ttest all including coreutils and qsh"
-	@echo "  make test-utils\ttest coreutils"
-	@echo "  make test-qsh\t\ttest qsh"
-	@echo "  make clean\t\tclean all builds"
-	@echo "  make sync\t\tsync dependency"
-	@echo "  make clang\t\tclang compiler plugins for all"
-	@echo "  make clang-qsh\tclang compiler plugins for qsh"
-	@echo "  make clang-coreutils\tclang compiler plugins for coreutils"
-	@echo
+	@echo "USAGE:"
+	@echo "  make all         - build library and utilities"
+	@echo "  make lib         - build miniutils library"
+	@echo "  make bins        - build standalone executables"
+	@echo "  make qsh         - build qsh shell executable"
+	@echo "  make clean       - remove build directory"
+	@echo "  make list        - list sources and targets"
+	@echo "  make info        - show build configuration"
+	@echo "  make flags       - show compiler flags"
+	@echo "  make format      - format .c and .h"
+	@echo "  make docker      - build and run development container"
+	@echo "  make test        - run command tests"
+	@echo "  make test-NAME   - run one command test"
+	@echo "  make unit        - run unit tests"
+	@echo "  make unit-NAME   - run one unit test"
+	@echo "  make clang       - run clang with bear"
+	@echo "  make help        - this message"
+	@echo ""
 
-# Below are the clang plugins for extension code hints, if you are not using clang, you can ignore them
-# clang compiler plugins
-clang: clang-coreutils clang-qsh
+flags:
+	@echo "Compiler flags:"
+	@echo $(CC_FLAGS)
+	@echo "Linker flags:"
+	@echo $(LDFLAGS)
+	@echo "Link libraries:"
+	@echo $(LDLIBS)
 
-# clang compiler plugins for qsh
-clang-qsh:
-	@cd $(SHELL_DIR) && bear --append --output $(FULL_PATH)/compile_commands.json -- $(MAKE) all 2>/dev/null || true
+clang:
+	@$(MAKE) clean
+	@bear -- $(MAKE) all
 
-# clang compiler plugins for coreutils
-clang-coreutils:
-	@rm -f $(ROOT_DIR)/compile_commands.json
-	@cd $(UTIL_DIR) && $(MAKE) clean
-	@cd $(UTIL_DIR) && bear --output $(FULL_PATH)/compile_commands.json -- $(MAKE) all
+format:
+	@for d in $(INCLUDE_PATH) $(EXTERNAL_INC_PATH) $(SRC_PATH) $(EXTERNAL_SRC_PATH); do \
+		[ -d "$$d" ] || continue; \
+		find "$$d" \( -name '*.c' -o -name '*.h' \) -exec clang-format -i {} +; \
+	done
+	@echo "Format done."
+
+test:
+	@$(MAKE) -C $(TESTS_PATH) test
+
+test-%:
+	@$(MAKE) -C $(TESTS_PATH) test-$*
+
+unit:
+	@$(MAKE) -C $(TESTS_PATH) unit
+
+unit-%:
+	@$(MAKE) -C $(TESTS_PATH) unit-$*
+
+export CC
+
+DOCKER_IMAGE := miniutils
+docker:
+	@if [ -z "$$(docker images -q $(DOCKER_IMAGE) 2>/dev/null)" ]; then \
+		echo "Building Docker image $(DOCKER_IMAGE)..."; \
+		docker build -t $(DOCKER_IMAGE) -f Dockerfile .; \
+	fi
+	@if [ -n "$$(docker ps -aq -f name=$(DOCKER_IMAGE)-container 2>/dev/null)" ]; then \
+		docker rm -f $(DOCKER_IMAGE)-container 2>/dev/null || true; \
+	fi
+	@docker run -it --name $(DOCKER_IMAGE)-container -v $(CUR_DIR):/workspace $(DOCKER_IMAGE) /bin/bash

@@ -1,5 +1,5 @@
-# mini-coreutils - A minimal set of core utilities for Unix-like systems
-# Copyright (C) 2025 Qiu Yixiang
+# miniutils - A minimal GNU coreutils implementation
+# Copyright (C) 2025 - 2026 Qiu Yixiang
 #
 # This program is free software: you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -13,18 +13,14 @@
 #
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
-#
 
-# Qsh Makefile
+DEBUG ?= 0
 
+LIB_NAME := miniutils
 
-.PHONY: all test clean
+CC := gcc
+CXX := g++
+AR := ar
+LD := gcc
 
-all:
-	@:
-
-test:
-	@:
-
-clean:
-	@:
+LIB_BUILD ?= static
