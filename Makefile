@@ -16,8 +16,8 @@
 
 CUR_DIR              := .
 SRC_PATH             := $(CUR_DIR)/src
-CORE_SRC_PATH        := $(SRC_PATH)/core
-UTIL_SRC_PATH        := $(SRC_PATH)
+LIBCORE_SRC_PATH     := $(SRC_PATH)/libcore
+UTIL_SRC_PATH        := $(SRC_PATH)/utils
 EXTERNAL_SRC_PATH    := $(CUR_DIR)/external/src
 EXTERNAL_INC_PATH 	 := $(CUR_DIR)/external/include
 INCLUDE_PATH         := $(CUR_DIR)/include
@@ -37,18 +37,18 @@ endif
 
 HOST_OS := $(shell uname -s)
 
-CORE_SRCS := $(shell find $(CORE_SRC_PATH) -name '*.c' 2>/dev/null | sort)
-EXTERNAL_SRCS := $(shell find $(EXTERNAL_SRC_PATH) -name '*.c' 2>/dev/null | sort)
+LIBCORE_SRCS := $(shell find $(LIBCORE_SRC_PATH) -name '*.c' 2>/dev/null | sort)
 UTIL_SRCS := $(wildcard $(UTIL_SRC_PATH)/*.c)
+EXTERNAL_SRCS := $(shell find $(EXTERNAL_SRC_PATH) -name '*.c' 2>/dev/null | sort)
 
-CORE_OBJS := $(patsubst $(CORE_SRC_PATH)/%.c,$(OBJ_PATH)/core/%.o,$(CORE_SRCS))
-EXTERNAL_OBJS := $(patsubst $(EXTERNAL_SRC_PATH)/%.c,$(OBJ_PATH)/external/%.o,$(EXTERNAL_SRCS))
+LIBCORE_OBJS := $(patsubst $(LIBCORE_SRC_PATH)/%.c,$(OBJ_PATH)/libcore/%.o,$(LIBCORE_SRCS))
 UTIL_OBJS := $(patsubst $(UTIL_SRC_PATH)/%.c,$(OBJ_PATH)/util/%.o,$(UTIL_SRCS))
+EXTERNAL_OBJS := $(patsubst $(EXTERNAL_SRC_PATH)/%.c,$(OBJ_PATH)/external/%.o,$(EXTERNAL_SRCS))
 UTIL_BINS := $(patsubst $(UTIL_SRC_PATH)/%.c,$(BIN_PATH)/%,$(UTIL_SRCS))
 
-CORE_DEPS := $(patsubst $(CORE_SRC_PATH)/%.c,$(DEP_PATH)/core/%.d,$(CORE_SRCS))
-EXTERNAL_DEPS := $(patsubst $(EXTERNAL_SRC_PATH)/%.c,$(DEP_PATH)/external/%.d,$(EXTERNAL_SRCS))
+LIBCORE_DEPS := $(patsubst $(LIBCORE_SRC_PATH)/%.c,$(DEP_PATH)/libcore/%.d,$(LIBCORE_SRCS))
 UTIL_DEPS := $(patsubst $(UTIL_SRC_PATH)/%.c,$(DEP_PATH)/util/%.d,$(UTIL_SRCS))
+EXTERNAL_DEPS := $(patsubst $(EXTERNAL_SRC_PATH)/%.c,$(DEP_PATH)/external/%.d,$(EXTERNAL_SRCS))
 
 ifeq ($(LIB_BUILD),shared)
 ifeq ($(HOST_OS),Darwin)
@@ -78,17 +78,19 @@ endif
 LDFLAGS :=
 LDLIBS :=
 
+ifeq ($(LIB_BUILD),shared)
+UTIL_LINK_FLAGS := -L$(LIB_PATH) -l$(LIB_NAME)
+UTIL_LINK_FLAGS += -Wl,-rpath,$(abspath $(LIB_PATH))
+else
+UTIL_LINK_FLAGS := $(LIB_ARTIFACT)
+endif
+
 AR_FLAGS := -rcs
 CC_DEP := -MMD -MP -MF
 
-$(OBJ_PATH)/core/%.o: $(CORE_SRC_PATH)/%.c
-	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/core/$*.d)
-	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/core/$*.d -MT $@ -c $< -o $@
-	@echo "  + CC	$<"
-
-$(OBJ_PATH)/external/%.o: $(EXTERNAL_SRC_PATH)/%.c
-	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/external/$*.d)
-	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/external/$*.d -MT $@ -c $< -o $@
+$(OBJ_PATH)/libcore/%.o: $(LIBCORE_SRC_PATH)/%.c
+	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/libcore/$*.d)
+	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/libcore/$*.d -MT $@ -c $< -o $@
 	@echo "  + CC	$<"
 
 $(OBJ_PATH)/util/%.o: $(UTIL_SRC_PATH)/%.c
@@ -96,28 +98,33 @@ $(OBJ_PATH)/util/%.o: $(UTIL_SRC_PATH)/%.c
 	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/util/$*.d -MT $@ -c $< -o $@
 	@echo "  + CC	$<"
 
--include $(CORE_DEPS) $(EXTERNAL_DEPS) $(UTIL_DEPS)
+$(OBJ_PATH)/external/%.o: $(EXTERNAL_SRC_PATH)/%.c
+	@mkdir -p $(dir $@) $(dir $(DEP_PATH)/external/$*.d)
+	@$(CC) $(CC_FLAGS) $(CC_DEP) $(DEP_PATH)/external/$*.d -MT $@ -c $< -o $@
+	@echo "  + CC	$<"
+
+-include $(LIBCORE_DEPS) $(UTIL_DEPS) $(EXTERNAL_DEPS)
 
 .DEFAULT_GOAL := help
 .PHONY: all lib bins clean help create_build_dir list info flags format docker \
 	qsh test unit test-% unit-% clang
 
 create_build_dir:
-	@mkdir -p $(OBJ_PATH)/core $(OBJ_PATH)/external $(OBJ_PATH)/util
-	@mkdir -p $(DEP_PATH)/core $(DEP_PATH)/external $(DEP_PATH)/util
+	@mkdir -p $(OBJ_PATH)/libcore $(OBJ_PATH)/util $(OBJ_PATH)/external
+	@mkdir -p $(DEP_PATH)/libcore $(DEP_PATH)/util $(DEP_PATH)/external
 	@mkdir -p $(BIN_PATH) $(LIB_PATH)
 
-ifeq ($(strip $(CORE_OBJS)),)
+ifeq ($(strip $(LIBCORE_OBJS)),)
 $(LIB_ARTIFACT): create_build_dir
-	@echo "Error: no .c files under $(CORE_SRC_PATH)"
+	@echo "Error: no .c files under $(LIBCORE_SRC_PATH)"
 	@exit 1
 else
-$(LIB_ARTIFACT): create_build_dir $(CORE_OBJS)
+$(LIB_ARTIFACT): create_build_dir $(LIBCORE_OBJS)
 ifeq ($(LIB_BUILD),static)
-	@$(AR) $(AR_FLAGS) $@ $(CORE_OBJS)
+	@$(AR) $(AR_FLAGS) $@ $(LIBCORE_OBJS)
 	@echo "  + AR	$@"
 else
-	@$(LD) -shared $(LDFLAGS) -o $@ $(CORE_OBJS) $(LDLIBS)
+	@$(LD) -shared $(LDFLAGS) -o $@ $(LIBCORE_OBJS) $(LDLIBS)
 	@echo "  + LD	$@"
 endif
 endif
@@ -129,7 +136,7 @@ else
 bins: create_build_dir lib $(UTIL_BINS)
 
 $(UTIL_BINS): $(BIN_PATH)/%: $(OBJ_PATH)/util/%.o $(LIB_ARTIFACT) $(EXTERNAL_OBJS)
-	@$(CC) $(CC_FLAGS) $(LDFLAGS) -o $@ $(OBJ_PATH)/util/$*.o $(LIB_ARTIFACT) $(EXTERNAL_OBJS) $(LDLIBS)
+	@$(CC) $(CC_FLAGS) $(LDFLAGS) -o $@ $(OBJ_PATH)/util/$*.o $(UTIL_LINK_FLAGS) $(EXTERNAL_OBJS) $(LDLIBS)
 	@echo "  + LD	$@"
 endif
 
@@ -145,14 +152,14 @@ clean:
 	@$(MAKE) -C $(TESTS_PATH) clean
 
 list:
-	@echo "Core library sources:"
-	@echo $(CORE_SRCS) | tr ' ' '\n' | sed 's/^/  /'
-	@echo "External sources:"
-	@echo $(EXTERNAL_SRCS) | tr ' ' '\n' | sed 's/^/  /'
+	@echo "Libcore sources:"
+	@echo $(LIBCORE_SRCS) | tr ' ' '\n' | sed 's/^/  /'
 	@echo "Utility sources:"
 	@echo $(UTIL_SRCS) | tr ' ' '\n' | sed 's/^/  /'
 	@echo "Utilities:"
 	@echo $(UTIL_BINS) | tr ' ' '\n' | sed 's/^/  /'
+	@echo "External sources:"
+	@echo $(EXTERNAL_SRCS) | tr ' ' '\n' | sed 's/^/  /'
 
 info:
 	@echo "Build configuration"

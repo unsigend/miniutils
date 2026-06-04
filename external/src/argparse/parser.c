@@ -70,7 +70,8 @@ static char **parse_short(struct argparse *ctx, char **p, char **end);
 static char **parse_long(struct argparse *ctx, char **p, char **end);
 
 int argparse_init(struct argparse *ctx, struct argparse_opt *opts,
-                  struct argparse_desc *desc) {
+                  struct argparse_desc *desc)
+{
   if (!ctx || !opts)
     return -1;
 
@@ -83,7 +84,8 @@ int argparse_init(struct argparse *ctx, struct argparse_opt *opts,
   return 0;
 }
 
-void argparse_fini(struct argparse *ctx) {
+void argparse_fini(struct argparse *ctx)
+{
   if (!ctx)
     return;
 
@@ -101,7 +103,8 @@ void argparse_fini(struct argparse *ctx) {
     free(ctx->errstr);
 }
 
-int argparse_parse(struct argparse *ctx, int argc, char **argv) {
+int argparse_parse(struct argparse *ctx, int argc, char **argv)
+{
   if (!ctx)
     return -1;
   if (!argc || !argv)
@@ -151,8 +154,8 @@ int argparse_parse(struct argparse *ctx, int argc, char **argv) {
   return 0;
 }
 
-static struct argparse_opt *findopt(struct argparse *ctx, char s,
-                                    const char *l) {
+static struct argparse_opt *findopt(struct argparse *ctx, char s, const char *l)
+{
   struct argparse_opt *opt = ctx->opts;
   while (opt->type != _OPT_END) {
     if ((s && opt->sname == s) ||
@@ -163,7 +166,8 @@ static struct argparse_opt *findopt(struct argparse *ctx, char s,
   return NULL;
 }
 
-static struct argparse_list *getslot(struct argparse *ctx) {
+static struct argparse_list *getslot(struct argparse *ctx)
+{
   if (!ctx->lists) {
     ctx->lists = calloc(NLIST, sizeof(struct argparse_list *));
     if (!ctx->lists)
@@ -184,7 +188,8 @@ static struct argparse_list *getslot(struct argparse *ctx) {
   return slot;
 }
 
-static int arglist_add(struct argparse_list *list, char *arg) {
+static int arglist_add(struct argparse_list *list, char *arg)
+{
   if (!list->items) {
     list->items = calloc(NLIST, sizeof(char *));
     if (!list->items)
@@ -202,7 +207,8 @@ static int arglist_add(struct argparse_list *list, char *arg) {
   return 0;
 }
 
-static int dumperror(struct argparse *ctx, const char *fmt, ...) {
+static int dumperror(struct argparse *ctx, const char *fmt, ...)
+{
   if (!ctx->errstr) {
     ctx->errstr = malloc(BUFSZ);
     if (!ctx->errstr)
@@ -218,7 +224,8 @@ static int dumperror(struct argparse *ctx, const char *fmt, ...) {
   return 0;
 }
 
-static int dumpvalue(void *dest, int type, const char *arg) {
+static int dumpvalue(void *dest, int type, const char *arg)
+{
   errno = 0;
   switch (type) {
   case _OPT_BOOL:
@@ -269,7 +276,8 @@ static int dumpvalue(void *dest, int type, const char *arg) {
   return 0;
 }
 
-static inline int push(struct argparse *ctx, void *dest, char *p) {
+static inline int push(struct argparse *ctx, void *dest, char *p)
+{
   struct argparse_list **listp = (struct argparse_list **)dest;
   if (!*listp) {
     *listp = getslot(ctx);
@@ -279,7 +287,8 @@ static inline int push(struct argparse *ctx, void *dest, char *p) {
   return arglist_add(*listp, p);
 }
 
-static char **parse_short(struct argparse *ctx, char **p, char **end) {
+static char **parse_short(struct argparse *ctx, char **p, char **end)
+{
   const char *s = *p + 1;
   /* handle combined options -abc */
   while (*s) {
@@ -346,7 +355,8 @@ static char **parse_short(struct argparse *ctx, char **p, char **end) {
   return p + 1;
 }
 
-static char **parse_long(struct argparse *ctx, char **p, char **end) {
+static char **parse_long(struct argparse *ctx, char **p, char **end)
+{
   const char *s = *p + 2;
   char *eq = strchr(s, '=');
   char buf[BUFSZ];

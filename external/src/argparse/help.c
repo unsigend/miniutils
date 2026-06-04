@@ -34,7 +34,8 @@
 #define BUFSZ 128
 #define DESC_GAP 2
 
-static void printwrap(const char *text, int indent, int width) {
+static void printwrap(const char *text, int indent, int width)
+{
   const char *p = text ? text : "";
   int col = 0;
 
@@ -73,7 +74,8 @@ static void printwrap(const char *text, int indent, int width) {
   fputc('\n', stdout);
 }
 
-static void fmtopt(const struct argparse_opt *opt, char *buf, size_t bufsz) {
+static void fmtopt(const struct argparse_opt *opt, char *buf, size_t bufsz)
+{
   const int hasvalue = (opt->type != _OPT_BOOL) && (opt->type != _OPT_GROUP);
   const char *suffix = hasvalue ? "=<value>" : "";
 
@@ -87,7 +89,8 @@ static void fmtopt(const struct argparse_opt *opt, char *buf, size_t bufsz) {
     buf[0] = '\0';
 }
 
-static int getoptwidth(struct argparse_opt *opts) {
+static int getoptwidth(struct argparse_opt *opts)
+{
   int maxw = 0;
   char spec[BUFSZ];
 
@@ -103,7 +106,8 @@ static int getoptwidth(struct argparse_opt *opts) {
   return maxw;
 }
 
-static void printopt(const struct argparse_opt *opt, int colw) {
+static void printopt(const struct argparse_opt *opt, int colw)
+{
   char spec[BUFSZ];
   fmtopt(opt, spec, sizeof(spec));
 
@@ -148,7 +152,8 @@ static void printopt(const struct argparse_opt *opt, int colw) {
   fputc('\n', stdout);
 }
 
-static void printoptions(struct argparse *ctx) {
+static void printoptions(struct argparse *ctx)
+{
   if (!ctx || !ctx->opts)
     return;
 
@@ -168,7 +173,8 @@ static void printoptions(struct argparse *ctx) {
   }
 }
 
-void argparse_cb_help(struct argparse *ctx, struct argparse_opt *opt) {
+void argparse_cb_help(struct argparse *ctx, struct argparse_opt *opt)
+{
   (void)opt;
   if (!ctx)
     return;
