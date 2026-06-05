@@ -16,19 +16,34 @@
  */
 
 #include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <unistd.h>
 
-ssize_t write_all(int fd, const void *buf, size_t n)
+int abspath(const char *path, char *buf)
 {
-  size_t nbytes = 0;
-  while (nbytes < n) {
-    ssize_t w = write(fd, (const char *)buf + nbytes, n - nbytes);
-    if (w < 0) {
-      if (errno == EINTR || errno == EAGAIN)
-        continue;
+  if (realpath(path, buf))
+    return 0;
+  if (errno != ENOENT)
+    return -1;
+
+  if (*path == '/') {
+    if (snprintf(buf, PATH_MAX, "%s", path) >= PATH_MAX) {
+      errno = ENAMETOOLONG;
       return -1;
     }
-    nbytes += w;
+    return 0;
   }
-  return nbytes;
+
+  char cwd[PATH_MAX];
+  if (getcwd(cwd, PATH_MAX) == NULL)
+    return -1;
+
+  if (snprintf(buf, PATH_MAX, "%s/%s", cwd, path) >= PATH_MAX) {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+  return 0;
 }

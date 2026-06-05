@@ -31,6 +31,10 @@ extern ssize_t write_all(int fd, const void *buf, size_t n);
    success, -1 on error and set errno. */
 extern int copy_file(const char *src, const char *dst);
 
+/* Copy one directory's content to another directory, both src and dst must
+   exists. Return 0 on success, -1 on error and set errno. */
+extern int copy_dir(const char *src, const char *dst);
+
 /* Check if path exists, Return 1 if it exists, 0 if it does not exist. */
 extern int path_exists(const char *path);
 
@@ -38,5 +42,18 @@ extern int path_exists(const char *path);
    does not exist. */
 extern int file_exists(const char *path);
 extern int dir_exists(const char *path);
+
+/* Create a directory and all parent directories if they do not exist.
+   Return 0 on success, -1 on error and set errno. */
+extern int mkdirp(const char *path, mode_t mode);
+
+/* Remove a directory and all its contents. Recursively remove all files and
+   directories. Return 0 on success, -1 on error and set errno. */
+extern int rmdirr(const char *path);
+
+/* Resolve the absolute path of a given path. Wrap on top of realpath(), but
+   accept non-existing paths. Assume the buf is large enough to hold the
+   PATH_MAX. Return 0 on success, -1 on error and set errno. */
+extern int abspath(const char *path, char *buf);
 
 #endif

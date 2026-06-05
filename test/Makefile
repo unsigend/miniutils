@@ -73,6 +73,10 @@ UNIT_LD_FLAGS := $(LIB_ARTIFACT) -lpthread
 endif
 UNIT_LD_FLAGS += $(UNIT_LDFLAGS)
 
+UNIT_CC_DEP := -MMD -MP -MF
+
+HDRS_UNIT := $(shell find $(UNIT_PATH) -name '*.h' 2>/dev/null | sort)
+
 SRCS_UNIT := $(shell find $(UNIT_PATH) -name '*.c' 2>/dev/null | sort)
 SRCS_EXT  := $(shell find $(EXTERNAL_SRC_PATH) -name '*.c' 2>/dev/null | sort)
 OBJS_UNIT := $(patsubst $(UNIT_PATH)/%.c,$(UNIT_OBJ)/%.o,$(SRCS_UNIT))
@@ -97,12 +101,12 @@ $(LIB_ARTIFACT):
 
 $(UNIT_OBJ)/external/%.o: $(EXTERNAL_SRC_PATH)/%.c | unit_create_build_dir
 	@mkdir -p $(dir $@) $(dir $(UNIT_DEP)/external/$*.d)
-	@$(CC) $(UNIT_CC_FLAGS) -MMD -MP -MF $(UNIT_DEP)/external/$*.d -MT $@ -c $< -o $@
+	@$(CC) $(UNIT_CC_FLAGS) $(UNIT_CC_DEP) $(UNIT_DEP)/external/$*.d -MT $@ -c $< -o $@
 	@echo "  + CC	$<"
 
-$(UNIT_OBJ)/%.o: $(UNIT_PATH)/%.c | unit_create_build_dir
+$(UNIT_OBJ)/%.o: $(UNIT_PATH)/%.c $(HDRS_UNIT) | unit_create_build_dir
 	@mkdir -p $(dir $@) $(dir $(UNIT_DEP)/$*.d)
-	@$(CC) $(UNIT_CC_FLAGS) -MMD -MP -MF $(UNIT_DEP)/$*.d -MT $@ -c $< -o $@
+	@$(CC) $(UNIT_CC_FLAGS) $(UNIT_CC_DEP) $(UNIT_DEP)/$*.d -MT $@ -c $< -o $@
 	@echo "  + CC	$<"
 
 -include $(DEPS_ALL)

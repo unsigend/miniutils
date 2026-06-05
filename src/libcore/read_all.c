@@ -22,7 +22,7 @@ ssize_t read_all(int fd, void *buf, size_t n)
 {
   size_t nbytes = 0;
   while (nbytes < n) {
-    ssize_t r = read(fd, buf + nbytes, n - nbytes);
+    ssize_t r = read(fd, (char *)buf + nbytes, n - nbytes);
     if (r == -1) {
       if (errno == EINTR || errno == EAGAIN)
         continue;

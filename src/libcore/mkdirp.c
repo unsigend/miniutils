@@ -16,19 +16,40 @@
  */
 
 #include <errno.h>
-#include <unistd.h>
+#include <limits.h>
+#include <string.h>
+#include <sys/stat.h>
 
-ssize_t write_all(int fd, const void *buf, size_t n)
+int mkdirp(const char *path, mode_t mode)
 {
-  size_t nbytes = 0;
-  while (nbytes < n) {
-    ssize_t w = write(fd, (const char *)buf + nbytes, n - nbytes);
-    if (w < 0) {
-      if (errno == EINTR || errno == EAGAIN)
-        continue;
-      return -1;
-    }
-    nbytes += w;
+  if (mkdir(path, mode) == 0)
+    return 0;
+
+  if (errno == EEXIST) {
+    struct stat st;
+    if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
+      return 0;
   }
-  return nbytes;
+
+  if (errno != ENOENT)
+    return -1;
+
+  char parent[PATH_MAX];
+  if (strlen(path) >= PATH_MAX) {
+    errno = ENAMETOOLONG;
+    return -1;
+  }
+  strncpy(parent, path, PATH_MAX - 1);
+  parent[PATH_MAX - 1] = '\0';
+  char *slash = strrchr(parent, '/');
+  if (slash == NULL) {
+    errno = EINVAL;
+    return -1;
+  }
+
+  *slash = '\0';
+  if (mkdirp(parent, mode) == -1)
+    return -1;
+
+  return mkdir(path, mode);
 }

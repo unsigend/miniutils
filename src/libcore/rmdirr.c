@@ -15,27 +15,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include <dirent.h>
+#include <errno.h>
+#include <limits.h>
+#include <stdio.h>
+#include <string.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-int path_exists(const char *path)
-{
-  struct stat st;
-  return stat(path, &st) == 0;
-}
-
-int file_exists(const char *path)
+int rmdirr(const char *path)
 {
   struct stat st;
   if (stat(path, &st) == -1)
-    return 0;
-  return S_ISREG(st.st_mode);
-}
+    return -1;
+  if (!S_ISDIR(st.st_mode)) {
+    return unlink(path);
+  }
 
-int dir_exists(const char *path)
-{
-  struct stat st;
-  if (stat(path, &st) == -1)
+  if (rmdir(path) == 0)
     return 0;
-  return S_ISDIR(st.st_mode);
+  if (errno != ENOTEMPTY && errno != EEXIST)
+    return -1;
+
+  DIR *dir = opendir(path);
+  if (dir == NULL)
+    return -1;
+
+  struct dirent *entry;
+  while ((entry = readdir(dir)) != NULL) {
+    if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
+      continue;
+    char buf[PATH_MAX];
+    if (snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name) >= PATH_MAX) {
+      errno = ENAMETOOLONG;
+      closedir(dir);
+      return -1;
+    }
+    if (rmdirr(buf) == -1) {
+      closedir(dir);
+      return -1;
+    }
+  }
+  closedir(dir);
+  return rmdir(path);
 }
