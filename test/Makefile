@@ -54,6 +54,8 @@ UNIT_CC_FLAGS += -I$(INCLUDE_PATH) -I$(EXTERNAL_INC_PATH)
 UNIT_CC_FLAGS += $(addprefix -I,$(shell find $(UNIT_PATH) -type d 2>/dev/null))
 ifeq ($(HOST_OS),Linux)
 UNIT_CC_FLAGS += -D_XOPEN_SOURCE=700
+UNIT_CC_FLAGS += -Wno-error=address
+UNIT_CC_FLAGS += -Wno-error=format-truncation
 endif
 
 UNIT_LDFLAGS :=

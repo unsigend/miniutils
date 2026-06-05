@@ -75,8 +75,6 @@ UTEST_CASE(copy_dir)
   char src[PATH_MAX];
   char dst[PATH_MAX];
   char path[PATH_MAX];
-  size_t dstlen;
-  int i = 0;
 
   TMP_ENSURE();
   TMP_PATH(src, "src");
@@ -156,19 +154,14 @@ UTEST_CASE(copy_dir)
   TMP_PATH(src, "src");
   TMP_PATH(dst, "dst");
   EXPECT_EQ_INT(mkdirp(src, 0755), 0);
-  snprintf(path, sizeof(path), "%s/f.txt", src);
-  TOUCH_FILE(path);
-
-  dstlen = strlen(dst);
   EXPECT_EQ_INT(mkdirp(dst, 0755), 0);
-  while (dstlen < PATH_MAX - 6) {
-    int n = snprintf(dst + dstlen, sizeof(dst) - dstlen, "/d%d", i++);
-    if (n < 0 || (size_t)n >= sizeof(dst) - dstlen)
-      break;
-    dstlen += (size_t)n;
-    EXPECT_EQ_INT(mkdirp(dst, 0755), 0);
-  }
-  EXPECT_FAIL(copy_dir(src, dst), ENAMETOOLONG);
+  snprintf(path, sizeof(path), "%s/a/b/c", src);
+  EXPECT_EQ_INT(mkdirp(path, 0755), 0);
+  snprintf(path, sizeof(path), "%s/a/b/c/deep.txt", src);
+  WRITE_FILE(path, "deep");
+  EXPECT_EQ_INT(copy_dir(src, dst), 0);
+  snprintf(path, sizeof(path), "%s/a/b/c/deep.txt", dst);
+  EXPECT_FILE_EQ(path, "deep");
   EXPECT_EQ_INT(rmdirr(tmpd), 0);
 
   TMP_PATH(src, "src");

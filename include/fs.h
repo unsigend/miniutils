@@ -56,4 +56,8 @@ extern int rmdirr(const char *path);
    PATH_MAX. Return 0 on success, -1 on error and set errno. */
 extern int abspath(const char *path, char *buf);
 
+/* Get the basename of a given path. Return the basename on success, NULL on
+   error and set errno. Compatible with POSIX and BSD. */
+extern char *fbasename(const char *path, char *buf);
+
 #endif
