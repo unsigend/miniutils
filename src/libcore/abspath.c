@@ -22,7 +22,7 @@
 #include <string.h>
 #include <unistd.h>
 
-int abspath(const char *path, char *buf)
+int fabspath(const char *path, char *buf)
 {
   if (realpath(path, buf))
     return 0;
