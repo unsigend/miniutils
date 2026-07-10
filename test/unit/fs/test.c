@@ -9,17 +9,17 @@
 
 UTEST_SUITE(fs)
 {
-  UTEST_RUNCASE(path_exists);
-  UTEST_RUNCASE(dir_exists);
-  UTEST_RUNCASE(file_exists);
+    UTEST_RUNCASE(path_exists);
+    UTEST_RUNCASE(dir_exists);
+    UTEST_RUNCASE(file_exists);
 
-  UTEST_RUNCASE(abspath);
+    UTEST_RUNCASE(fabspath);
 
-  UTEST_RUNCASE(read_all);
-  UTEST_RUNCASE(write_all);
+    UTEST_RUNCASE(read_all);
+    UTEST_RUNCASE(write_all);
 
-  UTEST_RUNCASE(mkdirp);
-  UTEST_RUNCASE(copy_file);
-  UTEST_RUNCASE(copy_dir);
-  UTEST_RUNCASE(rmdirr);
+    UTEST_RUNCASE(mkdirp);
+    UTEST_RUNCASE(copy_file);
+    UTEST_RUNCASE(copy_dir);
+    UTEST_RUNCASE(rmdirr);
 }

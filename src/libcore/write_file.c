@@ -15,29 +15,47 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef DIE_H
-#define DIE_H
-
 #include <errno.h>
-#include <stdarg.h>
+#include <fcntl.h>
+#include <limits.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdnoreturn.h>
-#include <string.h>
+#include <unistd.h>
 
-static inline noreturn void die(const char *fmt, ...)
+#include "fs.h"
+
+int write_file(const char *path, const void *buf, size_t buflen)
 {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    fputc('\n', stderr);
-    va_end(ap);
-    exit(EXIT_FAILURE);
-}
+    if (buflen == 0 || !buf) {
+        errno = EINVAL;
+        return -1;
+    }
 
-static inline noreturn void die_errno(const char *prog)
-{
-    die("%s: %s", prog, strerror(errno));
-}
+    int fd;
+    char tmppath[PATH_MAX];
 
-#endif
+    if (snprintf(tmppath, PATH_MAX, "%s.tmp", path) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+
+    if ((fd = open(tmppath, O_WRONLY | O_CREAT | O_TRUNC, 0644)) == -1)
+        return -1;
+
+    if (write_all(fd, buf, buflen) != (ssize_t)buflen) {
+        close(fd);
+        unlink(tmppath);
+        return -1;
+    }
+
+    if (close(fd) == -1) {
+        unlink(tmppath);
+        return -1;
+    }
+
+    if (rename(tmppath, path) == -1) {
+        unlink(tmppath);
+        return -1;
+    }
+
+    return 0;
+}

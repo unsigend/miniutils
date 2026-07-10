@@ -18,7 +18,7 @@
 #ifndef FS_H
 #define FS_H
 
-#include <stddef.h>
+#include <sys/stat.h>
 #include <sys/types.h>
 
 /* Read or Write all data from/to a file descriptor. Retry on EINTR or EAGAIN.
@@ -26,6 +26,15 @@
    errno. */
 extern ssize_t read_all(int fd, void *buf, size_t n);
 extern ssize_t write_all(int fd, const void *buf, size_t n);
+
+/* Read a file content into a buffer, the buf needs free by the caller. The buf
+   is guaranteed to be '\0' terminated if the file is not empty. Return 0 on
+   success, -1 on error and set errno. */
+extern int read_file(const char *path, void **buf, size_t *len);
+
+/* Write a buffer to a file if not empty truncate the file. Create atomically if
+   not exists. Return 0 on success, -1 on error and set errno. */
+extern int write_file(const char *path, const void *buf, size_t buflen);
 
 /* Copy file from src to dst, create dst file if it does not exist, Return 0 on
    success, -1 on error and set errno. */
@@ -59,5 +68,30 @@ extern int fabspath(const char *path, char *buf);
 /* Get the basename of a given path. Return the basename on success, NULL on
    error and set errno. Compatible with POSIX and BSD. */
 extern char *fbasename(const char *path, char *buf);
+
+/* Crossplatform function to get the nanoseconds of the ctime */
+__attribute__((always_inline)) inline long
+stat_ctime_nsec(const struct stat *st)
+{
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
+    return st->st_ctimespec.tv_nsec;
+#elif defined(__linux__)
+    return st->st_ctim.tv_nsec;
+#else
+    return 0;
+#endif
+}
+/* Crossplatform function to get the nanoseconds of the mtime */
+__attribute__((always_inline)) inline long
+stat_mtime_nsec(const struct stat *st)
+{
+#if defined(__APPLE__) || defined(__NetBSD__) || defined(__OpenBSD__)
+    return st->st_mtimespec.tv_nsec;
+#elif defined(__linux__)
+    return st->st_mtim.tv_nsec;
+#else
+    return 0;
+#endif
+}
 
 #endif

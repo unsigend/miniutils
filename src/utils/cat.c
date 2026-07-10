@@ -30,50 +30,50 @@ static const char *hint = "cat [FILE]...";
 
 int main(int argc, char *argv[])
 {
-  struct argparse ctx;
-  struct argparse_opt opts[] = {
-      OPT_HELP(),
-      OPT_END(),
-  };
-  struct argparse_desc desc = {
-      .prog = "cat",
-      .desc = "concatenate files and print on the standard output",
-      .usage = hint,
-  };
+    struct argparse ctx;
+    struct argparse_opt opts[] = {
+        OPT_HELP(),
+        OPT_END(),
+    };
+    struct argparse_desc desc = {
+        .prog = "cat",
+        .desc = "concatenate files and print on the standard output",
+        .usage = hint,
+    };
 
-  if (argparse_init(&ctx, opts, &desc) == -1)
-    die_errno(argv[0]);
+    if (argparse_init(&ctx, opts, &desc) == -1)
+        die_errno(argv[0]);
 
-  if (argparse_parse(&ctx, argc - 1, argv + 1) == -1)
-    die("%s: %s", argv[0], argparse_strerror(&ctx));
+    if (argparse_parse(&ctx, argc - 1, argv + 1) == -1)
+        die("%s: %s", argv[0], argparse_strerror(&ctx));
 
-  char buf[4096];
-  ssize_t n;
-  size_t remargc = argparse_getremargc(&ctx);
-  if (remargc == 0) {
-    /* cat from stdin */
-    while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
-      if (write_all(STDOUT_FILENO, buf, n) == -1)
-        die_errno(argv[0]);
-    if (n == -1)
-      die_errno(argv[0]);
-  } else {
-    for (size_t i = 0; i < remargc; i++) {
-      const char *path = argparse_getremargv(&ctx)[i];
-      int fd = open(path, O_RDONLY);
-      if (fd == -1)
-        die_errno(argv[0]);
-      while ((n = read(fd, buf, sizeof(buf))) > 0) {
-        if (write_all(STDOUT_FILENO, buf, n) == -1)
-          die_errno(argv[0]);
-      }
-      if (n == -1)
-        die_errno(argv[0]);
-      if (close(fd) == -1)
-        die_errno(argv[0]);
+    char buf[4096];
+    ssize_t n;
+    size_t remargc = argparse_getremargc(&ctx);
+    if (remargc == 0) {
+        /* cat from stdin */
+        while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
+            if (write_all(STDOUT_FILENO, buf, n) == -1)
+                die_errno(argv[0]);
+        if (n == -1)
+            die_errno(argv[0]);
+    } else {
+        for (size_t i = 0; i < remargc; i++) {
+            const char *path = argparse_getremargv(&ctx)[i];
+            int fd = open(path, O_RDONLY);
+            if (fd == -1)
+                die_errno(argv[0]);
+            while ((n = read(fd, buf, sizeof(buf))) > 0) {
+                if (write_all(STDOUT_FILENO, buf, n) == -1)
+                    die_errno(argv[0]);
+            }
+            if (n == -1)
+                die_errno(argv[0]);
+            if (close(fd) == -1)
+                die_errno(argv[0]);
+        }
     }
-  }
 
-  argparse_fini(&ctx);
-  return 0;
+    argparse_fini(&ctx);
+    return 0;
 }

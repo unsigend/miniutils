@@ -16,40 +16,50 @@
  */
 
 #include <errno.h>
-#include <limits.h>
-#include <string.h>
+#include <fcntl.h>
+#include <stdlib.h>
 #include <sys/stat.h>
+#include <unistd.h>
 
-int mkdirp(const char *path, mode_t mode)
+#include "fs.h"
+
+int read_file(const char *path, void **buf, size_t *len)
 {
-    if (mkdir(path, mode) == 0)
-        return 0;
+    int fd = -1;
+    struct stat st;
+    void *tmpbuf = NULL;
 
-    if (errno == EEXIST) {
-        struct stat st;
-        if (stat(path, &st) == 0 && S_ISDIR(st.st_mode))
-            return 0;
-    }
-
-    if (errno != ENOENT)
+    if (stat(path, &st) == -1)
         return -1;
-
-    char parent[PATH_MAX];
-    if (strlen(path) >= PATH_MAX) {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-    strncpy(parent, path, PATH_MAX - 1);
-    parent[PATH_MAX - 1] = '\0';
-    char *slash = strrchr(parent, '/');
-    if (slash == NULL) {
+    if (!S_ISREG(st.st_mode)) {
         errno = EINVAL;
         return -1;
     }
 
-    *slash = '\0';
-    if (mkdirp(parent, mode) == -1)
+    if (st.st_size == 0) {
+        *buf = NULL;
+        *len = 0;
+        return 0;
+    }
+
+    if ((fd = open(path, O_RDONLY)) == -1)
         return -1;
 
-    return mkdir(path, mode);
+    tmpbuf = malloc(st.st_size + 1);
+    if (!tmpbuf) {
+        close(fd);
+        return -1;
+    }
+    ((char *)tmpbuf)[st.st_size] = '\0';
+
+    if (read_all(fd, tmpbuf, st.st_size) != (ssize_t)st.st_size) {
+        free(tmpbuf);
+        close(fd);
+        return -1;
+    }
+
+    *buf = tmpbuf;
+    *len = st.st_size;
+    close(fd);
+    return 0;
 }
