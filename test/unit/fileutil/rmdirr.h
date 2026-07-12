@@ -53,7 +53,7 @@ UTEST_CASE(rmdirr)
   EXPECT_EQ_INT(mkdirp(path, 0755), 0);
   snprintf(path, sizeof(path), "%s/nested/y.txt", src);
   TOUCH_FILE(path);
-  EXPECT_EQ_INT(copy_dir(src, dst), 0);
+  EXPECT_EQ_INT(copy_dir(dst, src), 0);
   EXPECT_EQ_INT(rmdirr(dst), 0);
   EXPECT_FALSE(dir_exists(dst));
   EXPECT_EQ_INT(rmdirr(src), 0);
@@ -64,7 +64,7 @@ UTEST_CASE(rmdirr)
   EXPECT_EQ_INT(mkdirp(dst, 0755), 0);
   WRITE_FILE(src, "ok");
   snprintf(path, sizeof(path), "%s/b.txt", dst);
-  EXPECT_EQ_INT(copy_file(src, path), 0);
+  EXPECT_EQ_INT(copy_file(path, src), 0);
   EXPECT_EQ_INT(rmdirr(dst), 0);
   EXPECT_FALSE(path_exists(dst));
   EXPECT_EQ_INT(unlink(src), 0);

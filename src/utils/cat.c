@@ -17,6 +17,7 @@
 
 #include <argparse.h>
 #include <fcntl.h>
+#include <fileutil.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,7 +25,6 @@
 #include <unistd.h>
 
 #include "die.h"
-#include "fs.h"
 
 static const char *hint = "cat [FILE]...";
 

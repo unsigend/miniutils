@@ -3,7 +3,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
-#include <fs.h>
+#include <fileutil.h>
 #include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>

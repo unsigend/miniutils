@@ -18,11 +18,11 @@
 #include <errno.h>
 #include <unistd.h>
 
-ssize_t write_all(int fd, const void *buf, size_t n)
+ssize_t write_all(int fd, const void *buf, size_t buflen)
 {
     size_t nbytes = 0;
-    while (nbytes < n) {
-        ssize_t w = write(fd, (const char *)buf + nbytes, n - nbytes);
+    while (nbytes < buflen) {
+        ssize_t w = write(fd, (const char *)buf + nbytes, buflen - nbytes);
         if (w < 0) {
             if (errno == EINTR || errno == EAGAIN)
                 continue;

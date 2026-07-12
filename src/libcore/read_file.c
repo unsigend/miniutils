@@ -17,13 +17,12 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <fileutil.h>
 #include <stdlib.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "fs.h"
-
-int read_file(const char *path, void **buf, size_t *len)
+int read_file(const char *path, void **buf, size_t *buflen)
 {
     int fd = -1;
     struct stat st;
@@ -38,7 +37,7 @@ int read_file(const char *path, void **buf, size_t *len)
 
     if (st.st_size == 0) {
         *buf = NULL;
-        *len = 0;
+        *buflen = 0;
         return 0;
     }
 
@@ -59,7 +58,7 @@ int read_file(const char *path, void **buf, size_t *len)
     }
 
     *buf = tmpbuf;
-    *len = st.st_size;
+    *buflen = st.st_size;
     close(fd);
     return 0;
 }

@@ -17,11 +17,10 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <fileutil.h>
 #include <limits.h>
 #include <stdio.h>
 #include <unistd.h>
-
-#include "fs.h"
 
 int write_file(const char *path, const void *buf, size_t buflen)
 {

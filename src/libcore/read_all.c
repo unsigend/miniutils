@@ -18,11 +18,11 @@
 #include <errno.h>
 #include <unistd.h>
 
-ssize_t read_all(int fd, void *buf, size_t n)
+ssize_t read_all(int fd, void *buf, size_t buflen)
 {
     size_t nbytes = 0;
-    while (nbytes < n) {
-        ssize_t r = read(fd, (char *)buf + nbytes, n - nbytes);
+    while (nbytes < buflen) {
+        ssize_t r = read(fd, (char *)buf + nbytes, buflen - nbytes);
         if (r == -1) {
             if (errno == EINTR || errno == EAGAIN)
                 continue;

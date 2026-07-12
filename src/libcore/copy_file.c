@@ -16,12 +16,11 @@
  */
 
 #include <fcntl.h>
+#include <fileutil.h>
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "fs.h"
-
-int copy_file(const char *src, const char *dst)
+int copy_file(const char *dest, const char *src)
 {
     int srcfd = -1, dstfd = -1;
     struct stat st;
@@ -36,7 +35,7 @@ int copy_file(const char *src, const char *dst)
     if ((srcfd = open(src, O_RDONLY)) == -1)
         return -1;
 
-    if ((dstfd = open(dst, O_WRONLY | O_CREAT | O_TRUNC, mode)) == -1) {
+    if ((dstfd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, mode)) == -1) {
         close(srcfd);
         return -1;
     }
@@ -46,7 +45,7 @@ int copy_file(const char *src, const char *dst)
         if (n == -1) {
             close(srcfd);
             close(dstfd);
-            unlink(dst);
+            unlink(dest);
             return -1;
         }
         if (n == 0)
@@ -54,7 +53,7 @@ int copy_file(const char *src, const char *dst)
         if (write_all(dstfd, buf, n) == -1) {
             close(srcfd);
             close(dstfd);
-            unlink(dst);
+            unlink(dest);
             return -1;
         }
     }

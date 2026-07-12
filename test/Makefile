@@ -49,7 +49,7 @@ else
 LIB_ARTIFACT := $(LIB_PATH)/lib$(LIB_NAME).a
 endif
 
-UNIT_CC_FLAGS := -std=c11 -Wall -Wextra -Werror -Wshadow
+UNIT_CC_FLAGS := -std=c11 -Wall -Wextra -Werror -Wshadow -Wno-format-truncation -Wno-address
 UNIT_CC_FLAGS += -I$(INCLUDE_PATH) -I$(EXTERNAL_INC_PATH)
 UNIT_CC_FLAGS += $(addprefix -I,$(shell find $(UNIT_PATH) -type d 2>/dev/null))
 ifeq ($(HOST_OS),Linux)

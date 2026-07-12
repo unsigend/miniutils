@@ -16,11 +16,11 @@
  */
 
 #include <argparse.h>
+#include <fileutil.h>
 #include <limits.h>
 #include <sys/stat.h>
 
 #include "die.h"
-#include "fs.h"
 
 static const char *hint = "cp [-r] SOURCE... DEST";
 static noreturn void usage(void)
@@ -79,7 +79,7 @@ int main(int argc, char *argv[])
 
         /* cp file1 file2*/
         if (s_isfile && d_isfile) {
-            if (copy_file(src, dst) == -1)
+            if (copy_file(dst, src) == -1)
                 die_errno(argv[0]);
         }
         /* cp file dir/ */
@@ -89,7 +89,7 @@ int main(int argc, char *argv[])
         }
         /* cp file newfile */
         else if (s_isfile && !d_exist) {
-            if (copy_file(src, dst) == -1)
+            if (copy_file(dst, src) == -1)
                 die_errno(argv[0]);
         } else if (s_isdir && !rec) {
             die("%s: %s is a directory", argv[0], src);
@@ -105,7 +105,7 @@ int main(int argc, char *argv[])
                     die_errno(argv[0]);
                 if (mkdirp(dst, st.st_mode) == -1)
                     die_errno(argv[0]);
-                if (copy_dir(src, dst) == -1)
+                if (copy_dir(dst, src) == -1)
                     die_errno(argv[0]);
             }
         } else
@@ -145,7 +145,7 @@ int cp_ftod(const char *path, const char *dir)
         errno = ENAMETOOLONG;
         return -1;
     }
-    if (copy_file(path, dstpath) == -1)
+    if (copy_file(dstpath, path) == -1)
         return -1;
     return 0;
 }
@@ -165,7 +165,7 @@ int cp_dtod(const char *d1, const char *d2)
         return -1;
     if (mkdirp(dstpath, st.st_mode) == -1)
         return -1;
-    if (copy_dir(d1, dstpath) == -1)
+    if (copy_dir(dstpath, d1) == -1)
         return -1;
     return 0;
 }

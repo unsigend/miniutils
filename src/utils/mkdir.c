@@ -16,13 +16,13 @@
  */
 
 #include <argparse.h>
+#include <fileutil.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <sys/stat.h>
 
 #include "die.h"
-#include "fs.h"
 
 static const char *hint = "mkdir [-p] [-m MODE] DIRECTORY...";
 static noreturn void usage(void)
