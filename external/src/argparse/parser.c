@@ -24,12 +24,10 @@
 
 #include "argparse.h"
 
-#include <ctype.h>
 #include <errno.h>
 #include <limits.h>
 #include <stdarg.h>
 #include <stdbool.h>
-#include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -245,6 +243,8 @@ static int dumpvalue(void *dest, int type, const char *arg)
         break;
     }
     case _OPT_STR:
+        if (!arg || !*arg)
+            return -1;
         if (dest)
             *(char **)dest = (char *)arg;
         break;
@@ -363,7 +363,7 @@ static char **parse_short(struct argparse *ctx, char **p, char **end)
 static char **parse_long(struct argparse *ctx, char **p, char **end)
 {
     const char *s = *p + 2;
-    char *eq = strchr(s, '=');
+    char *eq = (char *)strchr(s, '=');
     char buf[BUFSZ];
     buf[0] = '\0';
     if (eq) {

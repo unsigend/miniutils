@@ -20,18 +20,20 @@
 
 ssize_t read_all(int fd, void *buf, size_t buflen)
 {
-    size_t nbytes = 0;
-    while (nbytes < buflen) {
-        ssize_t r = read(fd, (char *)buf + nbytes, buflen - nbytes);
-        if (r == -1) {
+    size_t total = 0;
+    ssize_t nread;
+
+    while (total < buflen) {
+        nread = read(fd, (char *)buf + total, buflen - total);
+        if (nread == -1) {
             if (errno == EINTR || errno == EAGAIN)
                 continue;
             return -1;
         }
-        if (r == 0) {
-            return nbytes;
-        }
-        nbytes += r;
+        if (nread == 0)
+            return total;
+        total += nread;
     }
-    return nbytes;
+
+    return total;
 }

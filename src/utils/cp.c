@@ -22,34 +22,38 @@
 
 #include "die.h"
 
-static const char *hint = "cp [-r] SOURCE... DEST";
+static const char *usages[] = {"cp [-r] SOURCE... DEST"};
+
 static noreturn void usage(void)
 {
-    fprintf(stdout, "usage: %s\n", hint);
+    fprintf(stdout, "usage: %s\n", usages[0]);
     exit(EXIT_SUCCESS);
 }
 
-/* Copy a file under a directory, dir must exist. Return 0 on success, -1 on
-   error and set errno. */
-int cp_ftod(const char *path, const char *dir);
-
-/* Copy a directory under another directory recursively, d1 and d2 must exist.
+/* Copy file path into directory dir as dir/<basename(path)>. dir must exist.
    Return 0 on success, -1 on error and set errno. */
-int cp_dtod(const char *d1, const char *d2);
+int cp_file_to_dir(const char *path, const char *dir);
+
+/* Copy directory src into directory dest as dest/<basename(src)>, creating
+   that subdirectory then copying its contents recursively. Both src and dest
+   must exist. Return 0 on success, -1 on error and set errno. */
+int cp_dir_to_dir(const char *src, const char *dest);
 
 int main(int argc, char *argv[])
 {
-    int rec = 0;
+    int recursive = 0;
+
     struct argparse ctx;
     struct argparse_opt opts[] = {
         OPT_HELP(),
-        OPT_BOOL('r', "recursive", "recursive copy", &rec),
+        OPT_BOOL('r', "recursive", "recursive copy", &recursive),
         OPT_END(),
     };
     struct argparse_desc desc = {
         .prog = "cp",
         .desc = "copy files and directories",
-        .usage = hint,
+        .usages = usages,
+        .nusages = sizeof(usages) / sizeof(usages[0]),
         .epilog = NULL,
     };
 
@@ -61,71 +65,79 @@ int main(int argc, char *argv[])
 
     if (argparse_getremargc(&ctx) < 2)
         usage();
+
     if (argparse_getremargc(&ctx) == 2) {
+
         const char *src = argparse_getremargv(&ctx)[0];
-        const char *dst = argparse_getremargv(&ctx)[1];
-        int s_isdir = dir_exists(src);
-        int d_isdir = dir_exists(dst);
-        int s_isfile = file_exists(src);
-        int d_isfile = file_exists(dst);
-        int d_exist = path_exists(dst);
+        const char *dest = argparse_getremargv(&ctx)[1];
 
-        struct stat src_st, dst_st;
-        if (stat(src, &src_st) != -1 && stat(dst, &dst_st) != -1)
-            if (src_st.st_dev == dst_st.st_dev &&
-                src_st.st_ino == dst_st.st_ino)
+        int src_isdir = dir_exists(src);
+        int dest_isdir = dir_exists(dest);
+        int src_isfile = file_exists(src);
+        int dest_isfile = file_exists(dest);
+        int dest_exist = path_exists(dest);
+
+        struct stat src_st, dest_st;
+
+        if (stat(src, &src_st) != -1 && stat(dest, &dest_st) != -1)
+            if (src_st.st_dev == dest_st.st_dev &&
+                src_st.st_ino == dest_st.st_ino)
                 die("%s: %s and %s are identical (not copied)", argv[0], src,
-                    dst);
+                    dest);
 
-        /* cp file1 file2*/
-        if (s_isfile && d_isfile) {
-            if (copy_file(dst, src) == -1)
+        if (src_isfile && dest_isfile) /* cp file1 file2 */
+        {
+            if (copy_file(dest, src) == -1)
                 die_errno(argv[0]);
         }
-        /* cp file dir/ */
-        else if (s_isfile && d_isdir) {
-            if (cp_ftod(src, dst) == -1)
+
+        else if (src_isfile && dest_isdir) /* cp file dir/ */
+        {
+            if (cp_file_to_dir(src, dest) == -1)
                 die_errno(argv[0]);
         }
-        /* cp file newfile */
-        else if (s_isfile && !d_exist) {
-            if (copy_file(dst, src) == -1)
+
+        else if (src_isfile && !dest_exist) /* cp file newfile */
+        {
+            if (copy_file(dest, src) == -1)
                 die_errno(argv[0]);
-        } else if (s_isdir && !rec) {
+        } else if (src_isdir && !recursive)
             die("%s: %s is a directory", argv[0], src);
-        } else if (s_isdir && rec) {
-            /* cp dir1 dir2/*/
-            if (d_isdir && cp_dtod(src, dst) == -1)
+        else if (src_isdir && recursive) {
+
+            if (dest_isdir &&
+                cp_dir_to_dir(src, dest) == -1) /* cp dir1 dir2/ */
                 die_errno(argv[0]);
 
-            /* cp dir newdir/ */
-            else {
+            else /* cp dir newdir/ */
+            {
                 struct stat st;
                 if (stat(src, &st) == -1)
                     die_errno(argv[0]);
-                if (mkdirp(dst, st.st_mode) == -1)
+                if (mkdirp(dest, st.st_mode) == -1)
                     die_errno(argv[0]);
-                if (copy_dir(dst, src) == -1)
+                if (copy_dir(dest, src) == -1)
                     die_errno(argv[0]);
             }
         } else
             die("%s: %s broken file or symbolic link", argv[0], src);
 
     } else {
-        const char *dst =
-            argparse_getremargv(&ctx)[argparse_getremargc(&ctx) - 1];
-        if (!dir_exists(dst))
-            die("%s: %s is not a directory", argv[0], dst);
+        const char *dest = argparse_getremargv(
+            &ctx)[argparse_getremargc(&ctx) - 1]; /* last one as dest */
+
+        if (!dir_exists(dest))
+            die("%s: %s is not a directory", argv[0], dest);
         for (size_t i = 0; i < argparse_getremargc(&ctx) - 1; i++) {
             const char *src = argparse_getremargv(&ctx)[i];
             if (file_exists(src)) {
-                if (cp_ftod(src, dst) == -1)
+                if (cp_file_to_dir(src, dest) == -1)
                     die_errno(argv[0]);
             } else {
-                if (!rec)
+                if (!recursive)
                     die("%s: target is not a regular file or directory",
                         argv[0]);
-                if (cp_dtod(src, dst) == -1)
+                if (cp_dir_to_dir(src, dest) == -1)
                     die_errno(argv[0]);
             }
         }
@@ -135,37 +147,40 @@ int main(int argc, char *argv[])
     return 0;
 }
 
-int cp_ftod(const char *path, const char *dir)
+int cp_file_to_dir(const char *path, const char *dir)
 {
     char bname[PATH_MAX];
-    char dstpath[PATH_MAX];
+    char destpath[PATH_MAX];
+
     if (fbasename(path, bname) == NULL)
         return -1;
-    if (snprintf(dstpath, sizeof(dstpath), "%s/%s", dir, bname) >= PATH_MAX) {
+    if (snprintf(destpath, PATH_MAX, "%s/%s", dir, bname) >= PATH_MAX) {
         errno = ENAMETOOLONG;
         return -1;
     }
-    if (copy_file(dstpath, path) == -1)
+    if (copy_file(destpath, path) == -1)
         return -1;
     return 0;
 }
 
-int cp_dtod(const char *d1, const char *d2)
+int cp_dir_to_dir(const char *src, const char *dest)
 {
     char bname[PATH_MAX];
-    char dstpath[PATH_MAX];
-    if (fbasename(d1, bname) == NULL)
+    char destpath[PATH_MAX];
+    struct stat st;
+
+    if (fbasename(src, bname) == NULL)
         return -1;
-    if (snprintf(dstpath, sizeof(dstpath), "%s/%s", d2, bname) >= PATH_MAX) {
+    if (snprintf(destpath, PATH_MAX, "%s/%s", dest, bname) >= PATH_MAX) {
         errno = ENAMETOOLONG;
         return -1;
     }
-    struct stat st;
-    if (stat(d1, &st) == -1)
+
+    if (stat(src, &st) == -1)
         return -1;
-    if (mkdirp(dstpath, st.st_mode) == -1)
+    if (mkdirp(destpath, st.st_mode) == -1)
         return -1;
-    if (copy_dir(dstpath, d1) == -1)
+    if (copy_dir(destpath, src) == -1)
         return -1;
     return 0;
 }

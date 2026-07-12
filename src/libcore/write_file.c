@@ -24,13 +24,13 @@
 
 int write_file(const char *path, const void *buf, size_t buflen)
 {
+    int fd;
+    char tmppath[PATH_MAX];
+
     if (buflen == 0 || !buf) {
         errno = EINVAL;
         return -1;
     }
-
-    int fd;
-    char tmppath[PATH_MAX];
 
     if (snprintf(tmppath, PATH_MAX, "%s.tmp", path) >= PATH_MAX) {
         errno = ENAMETOOLONG;

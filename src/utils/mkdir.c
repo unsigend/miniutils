@@ -24,10 +24,10 @@
 
 #include "die.h"
 
-static const char *hint = "mkdir [-p] [-m MODE] DIRECTORY...";
+static const char *usages[] = {"mkdir [-p] [-m MODE] DIRECTORY..."};
 static noreturn void usage(void)
 {
-    fprintf(stdout, "usage: %s\n", hint);
+    fprintf(stdout, "usage: %s\n", usages[0]);
     exit(EXIT_SUCCESS);
 }
 
@@ -36,18 +36,21 @@ static noreturn void usage(void)
 int main(int argc, char *argv[])
 {
     int p = 0;
-    const char *mode = NULL;
+    const char *modestr = NULL;
+
     struct argparse ctx;
     struct argparse_opt opts[] = {
         OPT_HELP(),
         OPT_BOOL('p', "parents", "create parent directories as needed", &p),
-        OPT_STR('m', "mode", "set octal mode", &mode, OPT_REQUIRED),
+        OPT_STR('m', "mode", "set octal mode", &modestr, OPT_REQUIRED),
         OPT_END(),
     };
     struct argparse_desc desc = {
         .prog = "mkdir",
         .desc = "create directories",
-        .usage = "mkdir [OPTION]... DIRECTORY...",
+        .usages = usages,
+        .epilog = NULL,
+        .nusages = sizeof(usages) / sizeof(usages[0]),
     };
 
     if (argparse_init(&ctx, opts, &desc) == -1)
@@ -59,25 +62,23 @@ int main(int argc, char *argv[])
     if (argparse_getremargc(&ctx) < 1)
         usage();
 
-    int m = MODE;
-    if (mode) {
-        char *e = NULL;
+    unsigned int mode = MODE;
+    if (modestr) {
+        char *endstr = NULL;
         errno = 0;
-        m = (int)strtol(mode, &e, 8);
-        if (errno == ERANGE || errno == EINVAL || *e != '\0' || m < 0 ||
-            m > 07777)
-            die("%s: invalid mode: %s", argv[0], mode);
+        mode = (unsigned int)strtoul(modestr, &endstr, 8);
+        if (errno == ERANGE || errno == EINVAL || *endstr != '\0' || mode < 0 ||
+            mode > 07777)
+            die("%s: invalid mode: %s", argv[0], modestr);
     }
 
     for (size_t i = 0; i < argparse_getremargc(&ctx); i++) {
-        const char *d = argparse_getremargv(&ctx)[i];
+        const char *dir = argparse_getremargv(&ctx)[i];
         if (p) {
-            if (mkdirp(d, m) == -1)
+            if (mkdirp(dir, mode) == -1)
                 die_errno(argv[0]);
-        } else {
-            if (mkdir(d, m) == -1)
-                die_errno(argv[0]);
-        }
+        } else if (mkdir(dir, mode) == -1)
+            die_errno(argv[0]);
     }
 
     argparse_fini(&ctx);

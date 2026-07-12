@@ -23,6 +23,8 @@
 
 int fabspath(const char *path, char *buf)
 {
+    char cwd[PATH_MAX];
+
     if (realpath(path, buf))
         return 0;
     if (errno != ENOENT)
@@ -36,7 +38,6 @@ int fabspath(const char *path, char *buf)
         return 0;
     }
 
-    char cwd[PATH_MAX];
     if (getcwd(cwd, PATH_MAX) == NULL)
         return -1;
 
@@ -44,5 +45,6 @@ int fabspath(const char *path, char *buf)
         errno = ENAMETOOLONG;
         return -1;
     }
+
     return 0;
 }

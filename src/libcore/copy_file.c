@@ -22,7 +22,7 @@
 
 int copy_file(const char *dest, const char *src)
 {
-    int srcfd = -1, dstfd = -1;
+    int srcfd, destfd;
     struct stat st;
     mode_t mode;
     char buf[4096];
@@ -35,7 +35,7 @@ int copy_file(const char *dest, const char *src)
     if ((srcfd = open(src, O_RDONLY)) == -1)
         return -1;
 
-    if ((dstfd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, mode)) == -1) {
+    if ((destfd = open(dest, O_WRONLY | O_CREAT | O_TRUNC, mode)) == -1) {
         close(srcfd);
         return -1;
     }
@@ -44,25 +44,25 @@ int copy_file(const char *dest, const char *src)
         n = read_all(srcfd, buf, sizeof(buf));
         if (n == -1) {
             close(srcfd);
-            close(dstfd);
+            close(destfd);
             unlink(dest);
             return -1;
         }
         if (n == 0)
             break;
-        if (write_all(dstfd, buf, n) == -1) {
+        if (write_all(destfd, buf, n) == -1) {
             close(srcfd);
-            close(dstfd);
+            close(destfd);
             unlink(dest);
             return -1;
         }
     }
 
     if (close(srcfd) == -1) {
-        close(dstfd);
+        close(destfd);
         return -1;
     }
-    if (close(dstfd) == -1)
+    if (close(destfd) == -1)
         return -1;
 
     return 0;

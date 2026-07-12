@@ -24,9 +24,9 @@
 
 int read_file(const char *path, void **buf, size_t *buflen)
 {
-    int fd = -1;
+    int fd;
     struct stat st;
-    void *tmpbuf = NULL;
+    void *tmpbuf;
 
     if (stat(path, &st) == -1)
         return -1;

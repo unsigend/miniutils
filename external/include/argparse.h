@@ -140,7 +140,8 @@ struct argparse_opt {
 struct argparse_desc {
     const char *prog;
     const char *desc;
-    const char *usage;
+    const char **usages;
+    size_t nusages;
     const char *epilog;
 };
 

@@ -26,28 +26,27 @@
 int rmdirr(const char *path)
 {
     struct stat st;
+    DIR *dir;
+    struct dirent *entry;
+    char buf[PATH_MAX];
+
     if (stat(path, &st) == -1)
         return -1;
-    if (!S_ISDIR(st.st_mode)) {
+    if (!S_ISDIR(st.st_mode))
         return unlink(path);
-    }
-
     if (rmdir(path) == 0)
         return 0;
+
     if (errno != ENOTEMPTY && errno != EEXIST)
         return -1;
 
-    DIR *dir = opendir(path);
-    if (dir == NULL)
+    if ((dir = opendir(path)) == NULL)
         return -1;
 
-    struct dirent *entry;
     while ((entry = readdir(dir)) != NULL) {
         if (strcmp(entry->d_name, ".") == 0 || strcmp(entry->d_name, "..") == 0)
             continue;
-        char buf[PATH_MAX];
-        if (snprintf(buf, sizeof(buf), "%s/%s", path, entry->d_name) >=
-            PATH_MAX) {
+        if (snprintf(buf, PATH_MAX, "%s/%s", path, entry->d_name) >= PATH_MAX) {
             errno = ENAMETOOLONG;
             closedir(dir);
             return -1;

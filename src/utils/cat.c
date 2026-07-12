@@ -26,7 +26,9 @@
 
 #include "die.h"
 
-static const char *hint = "cat [FILE]...";
+#define BUFSIZE 4096
+
+static const char *usages[] = {"cat [FILE]..."};
 
 int main(int argc, char *argv[])
 {
@@ -38,7 +40,9 @@ int main(int argc, char *argv[])
     struct argparse_desc desc = {
         .prog = "cat",
         .desc = "concatenate files and print on the standard output",
-        .usage = hint,
+        .usages = usages,
+        .nusages = sizeof(usages) / sizeof(usages[0]),
+        .epilog = NULL,
     };
 
     if (argparse_init(&ctx, opts, &desc) == -1)
@@ -47,23 +51,29 @@ int main(int argc, char *argv[])
     if (argparse_parse(&ctx, argc - 1, argv + 1) == -1)
         die("%s: %s", argv[0], argparse_strerror(&ctx));
 
-    char buf[4096];
+    char buf[BUFSIZE];
     ssize_t n;
     size_t remargc = argparse_getremargc(&ctx);
-    if (remargc == 0) {
-        /* cat from stdin */
-        while ((n = read(STDIN_FILENO, buf, sizeof(buf))) > 0)
+
+    if (remargc == 0) /* cat from stdin */
+    {
+        while ((n = read(STDIN_FILENO, buf, BUFSIZE)) > 0)
             if (write_all(STDOUT_FILENO, buf, n) == -1)
                 die_errno(argv[0]);
+
         if (n == -1)
             die_errno(argv[0]);
     } else {
+        const char *path;
+        int fd;
+
         for (size_t i = 0; i < remargc; i++) {
-            const char *path = argparse_getremargv(&ctx)[i];
-            int fd = open(path, O_RDONLY);
+            path = argparse_getremargv(&ctx)[i];
+            fd = open(path, O_RDONLY);
             if (fd == -1)
                 die_errno(argv[0]);
-            while ((n = read(fd, buf, sizeof(buf))) > 0) {
+
+            while ((n = read(fd, buf, BUFSIZE)) > 0) {
                 if (write_all(STDOUT_FILENO, buf, n) == -1)
                     die_errno(argv[0]);
             }
