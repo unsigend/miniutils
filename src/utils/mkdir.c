@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
         char *endstr = NULL;
         errno = 0;
         mode = (unsigned int)strtoul(modestr, &endstr, 8);
-        if (errno == ERANGE || errno == EINVAL || *endstr != '\0' || mode < 0 ||
+        if (errno == ERANGE || errno == EINVAL || *endstr != '\0' ||
             mode > 07777)
             die("%s: invalid mode: %s", argv[0], modestr);
     }

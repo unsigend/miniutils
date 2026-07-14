@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     libssl-dev \
     zlib1g-dev \
+    cloc \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /workspace
