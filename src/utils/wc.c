@@ -31,68 +31,6 @@ struct counts {
     size_t bytes;
 };
 
-static int count_stdin(struct counts *counts); /* count from stdin */
-static int count_file(const char *path, struct counts *counts); /* count file */
-static void statistics(struct counts *counts, int show_bytes, int show_lines,
-                       int show_words, const char *path); /* print statistics */
-
-int main(int argc, char *argv[])
-{
-    int lines = 0;
-    int words = 0;
-    int bytes = 0;
-    struct counts counts = {0, 0, 0};
-
-    struct argparse ctx;
-    struct argparse_opt opts[] = {
-        OPT_HELP(),
-        OPT_BOOL('c', "bytes", "print the byte counts", &bytes),
-        OPT_BOOL('l', "lines", "print the newline counts", &lines),
-        OPT_BOOL('w', "words", "print the word counts", &words),
-        OPT_END(),
-    };
-    struct argparse_desc desc = {
-        .prog = "wc",
-        .desc = "print newline, word, and byte counts for each file",
-        .usages = usages,
-        .nusages = sizeof(usages) / sizeof(usages[0]),
-        .epilog = NULL,
-    };
-
-    if (argparse_init(&ctx, opts, &desc) == -1)
-        die_errno(argv[0]);
-
-    if (argparse_parse(&ctx, argc - 1, argv + 1) == -1)
-        die("%s: %s", argv[0], argparse_strerror(&ctx));
-
-    if (!lines && !words && !bytes) /* default: print lines, words, and bytes */
-        lines = words = bytes = 1;
-
-    if (argparse_getremargc(&ctx) == 0) /* count from stdin */
-    {
-        if (count_stdin(&counts) == -1)
-            die_errno(argv[0]);
-        statistics(&counts, bytes, lines, words, NULL);
-    } else {
-        for (size_t i = 0; i < argparse_getremargc(&ctx); i++) {
-            const char *path = argparse_getremargv(&ctx)[i];
-            struct counts file_counts = {0, 0, 0}; /* file local */
-            if (count_file(path, &file_counts) == -1)
-                die_errno(argv[0]);
-            statistics(&file_counts, bytes, lines, words, path);
-            counts.lines += file_counts.lines;
-            counts.words += file_counts.words;
-            counts.bytes += file_counts.bytes;
-        }
-
-        if (argparse_getremargc(&ctx) > 1)
-            statistics(&counts, bytes, lines, words, "total");
-    }
-
-    argparse_fini(&ctx);
-    return 0;
-}
-
 static int count_stdin(struct counts *counts)
 {
     char buf[1024];
@@ -166,4 +104,61 @@ static void statistics(struct counts *counts, int show_bytes, int show_lines,
     if (path)
         printf(" %s", path);
     printf("\n");
+}
+
+int main(int argc, char *argv[])
+{
+    int lines = 0;
+    int words = 0;
+    int bytes = 0;
+    struct counts counts = {0, 0, 0};
+
+    struct argparse ctx;
+    struct argparse_opt opts[] = {
+        OPT_HELP(),
+        OPT_BOOL('c', "bytes", "print the byte counts", &bytes),
+        OPT_BOOL('l', "lines", "print the newline counts", &lines),
+        OPT_BOOL('w', "words", "print the word counts", &words),
+        OPT_END(),
+    };
+    struct argparse_desc desc = {
+        .prog = "wc",
+        .desc = "print newline, word, and byte counts for each file",
+        .usages = usages,
+        .nusages = sizeof(usages) / sizeof(usages[0]),
+        .epilog = NULL,
+    };
+
+    if (argparse_init(&ctx, opts, &desc) == -1)
+        die_errno(argv[0]);
+
+    if (argparse_parse(&ctx, argc - 1, argv + 1) == -1)
+        die("%s: %s", argv[0], argparse_strerror(&ctx));
+
+    if (!lines && !words && !bytes) /* default: print lines, words, and bytes */
+        lines = words = bytes = 1;
+
+    if (argparse_getremargc(&ctx) == 0) /* count from stdin */
+    {
+        if (count_stdin(&counts) == -1)
+            die_errno(argv[0]);
+        statistics(&counts, bytes, lines, words, NULL);
+    } else {
+        for (size_t i = 0; i < argparse_getremargc(&ctx); i++) {
+            const char *path = argparse_getremargv(&ctx)[i];
+            struct counts file_counts = {0, 0, 0}; /* file local */
+            if (count_file(path, &file_counts) == -1)
+                die_errno(argv[0]);
+            statistics(&file_counts, bytes, lines, words, path);
+            counts.lines += file_counts.lines;
+            counts.words += file_counts.words;
+            counts.bytes += file_counts.bytes;
+        }
+
+        if (argparse_getremargc(&ctx) > 1)
+            statistics(&counts, bytes, lines, words, "total");
+    }
+
+    argparse_fini(&ctx);
+    return 0;
 }

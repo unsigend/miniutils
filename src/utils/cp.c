@@ -32,12 +32,46 @@ static noreturn void usage(void)
 
 /* Copy file path into directory dir as dir/<basename(path)>. dir must exist.
    Return 0 on success, -1 on error and set errno. */
-int cp_file_to_dir(const char *path, const char *dir);
+static int cp_file_to_dir(const char *path, const char *dir)
+{
+    char bname[PATH_MAX];
+    char destpath[PATH_MAX];
+
+    if (fbasename(path, bname) == NULL)
+        return -1;
+    if (snprintf(destpath, PATH_MAX, "%s/%s", dir, bname) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    if (copy_file(destpath, path) == -1)
+        return -1;
+    return 0;
+}
 
 /* Copy directory src into directory dest as dest/<basename(src)>, creating
    that subdirectory then copying its contents recursively. Both src and dest
    must exist. Return 0 on success, -1 on error and set errno. */
-int cp_dir_to_dir(const char *src, const char *dest);
+static int cp_dir_to_dir(const char *src, const char *dest)
+{
+    char bname[PATH_MAX];
+    char destpath[PATH_MAX];
+    struct stat st;
+
+    if (fbasename(src, bname) == NULL)
+        return -1;
+    if (snprintf(destpath, PATH_MAX, "%s/%s", dest, bname) >= PATH_MAX) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+
+    if (stat(src, &st) == -1)
+        return -1;
+    if (mkdirp(destpath, st.st_mode) == -1)
+        return -1;
+    if (copy_dir(destpath, src) == -1)
+        return -1;
+    return 0;
+}
 
 int main(int argc, char *argv[])
 {
@@ -144,43 +178,5 @@ int main(int argc, char *argv[])
     }
 
     argparse_fini(&ctx);
-    return 0;
-}
-
-int cp_file_to_dir(const char *path, const char *dir)
-{
-    char bname[PATH_MAX];
-    char destpath[PATH_MAX];
-
-    if (fbasename(path, bname) == NULL)
-        return -1;
-    if (snprintf(destpath, PATH_MAX, "%s/%s", dir, bname) >= PATH_MAX) {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-    if (copy_file(destpath, path) == -1)
-        return -1;
-    return 0;
-}
-
-int cp_dir_to_dir(const char *src, const char *dest)
-{
-    char bname[PATH_MAX];
-    char destpath[PATH_MAX];
-    struct stat st;
-
-    if (fbasename(src, bname) == NULL)
-        return -1;
-    if (snprintf(destpath, PATH_MAX, "%s/%s", dest, bname) >= PATH_MAX) {
-        errno = ENAMETOOLONG;
-        return -1;
-    }
-
-    if (stat(src, &st) == -1)
-        return -1;
-    if (mkdirp(destpath, st.st_mode) == -1)
-        return -1;
-    if (copy_dir(destpath, src) == -1)
-        return -1;
     return 0;
 }
