@@ -16,11 +16,10 @@
  */
 
 #include <argparse.h>
-#include <fileutil.h>
+#include <die.h>
+#include <fileutils.h>
 #include <limits.h>
 #include <sys/stat.h>
-
-#include "die.h"
 
 static const char *usages[] = {"cp [-r] SOURCE... DEST"};
 

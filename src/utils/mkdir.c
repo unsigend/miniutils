@@ -16,13 +16,12 @@
  */
 
 #include <argparse.h>
-#include <fileutil.h>
+#include <die.h>
+#include <fileutils.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <sys/stat.h>
-
-#include "die.h"
 
 static const char *usages[] = {"mkdir [-p] [-m MODE] DIRECTORY..."};
 static noreturn void usage(void)

@@ -1,14 +1,14 @@
 #include <utest.h>
 
-#include "fileutil/abspath.h"
-#include "fileutil/basename.h"
-#include "fileutil/copy.h"
-#include "fileutil/exist.h"
-#include "fileutil/io.h"
-#include "fileutil/mkdirp.h"
-#include "fileutil/rmdirr.h"
+#include "fileutils/abspath.h"
+#include "fileutils/basename.h"
+#include "fileutils/copy.h"
+#include "fileutils/exist.h"
+#include "fileutils/io.h"
+#include "fileutils/mkdirp.h"
+#include "fileutils/rmdirr.h"
 
-UTEST_SUITE(fileutil)
+UTEST_SUITE(fileutils)
 {
     UTEST_RUNCASE(path_exists);
     UTEST_RUNCASE(dir_exists);

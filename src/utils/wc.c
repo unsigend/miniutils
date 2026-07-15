@@ -17,11 +17,10 @@
 
 #include <argparse.h>
 #include <ctype.h>
-#include <fileutil.h>
+#include <die.h>
+#include <fileutils.h>
 #include <stddef.h>
 #include <unistd.h>
-
-#include "die.h"
 
 static const char *usages[] = {"wc [-clw] [FILE]..."};
 

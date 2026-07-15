@@ -9,7 +9,7 @@
 #define NTHREADS 5
 #define NTHREADMAX 64
 
-extern UTEST_SUITE(fileutil);
+extern UTEST_SUITE(fileutils);
 
 int main(int argc, char *argv[])
 {
@@ -19,7 +19,7 @@ int main(int argc, char *argv[])
     UTEST_INIT(UTF_STOPONASS | UTF_SHOWSUITE | UTF_STOPONCASE);
 
     /* add test suites */
-    UTEST_ADDSUITE(fileutil);
+    UTEST_ADDSUITE(fileutils);
 
     for (int i = 1; i < argc; i++) {
         if (strncmp(argv[i], "-j", 2) == 0) {

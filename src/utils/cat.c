@@ -16,15 +16,14 @@
  */
 
 #include <argparse.h>
+#include <die.h>
 #include <fcntl.h>
-#include <fileutil.h>
+#include <fileutils.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
 #include <unistd.h>
-
-#include "die.h"
 
 #define BUFSIZE 4096
 
