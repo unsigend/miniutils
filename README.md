@@ -281,6 +281,37 @@ Print lines that match a pattern.
 
 Output the first part of files.
 
+#### Synopsis
+
+```
+head [-n LINES] [-c BYTES] [FILE...]
+```
+
+#### Description
+
+Prints the first part of each `FILE` to standard output. With no `FILE`, reads standard input. With no options, prints the first 10 lines. `-n` and `-c` cannot be used together. Multiple files are processed in order without header lines.
+
+#### Options
+
+`-h`
+`--help`
+
+Show help message and exit.
+
+`-n` `LINES`
+`--lines=` `LINES`
+
+Print the first `LINES` lines of each input.
+
+`-c` `BYTES`
+`--bytes=` `BYTES`
+
+Print the first `BYTES` bytes of each input.
+
+`FILE`
+
+Input file path. Omit to read standard input.
+
 ---
 
 ### id
@@ -360,6 +391,20 @@ Move or rename files.
 
 Print environment variables.
 
+#### Synopsis
+
+```
+printenv [VARIABLE]...
+```
+
+#### Description
+
+With no operands, prints every environment entry as `NAME=value`. With one or more `VARIABLE` names, prints each set variable's value on its own line. Unset names produce no output. Exits with status 0 if every named variable was found, or 1 if any were missing.
+
+`VARIABLE`
+
+Environment variable name to print.
+
 ---
 
 ### printf
@@ -371,6 +416,18 @@ Format and print data.
 ### pwd
 
 Print the current working directory.
+
+Prints the physical path (symlinks resolved). Extra arguments are ignored.
+
+#### Synopsis
+
+```
+pwd
+```
+
+#### Description
+
+Writes the absolute physical working directory to standard output, followed by a newline. Uses `getcwd`, so symbolic links in the path are resolved.
 
 ---
 
@@ -496,6 +553,47 @@ Exits with status `EXIT_SUCCESS`. Any arguments are ignored.
 
 Print system information.
 
+#### Synopsis
+
+```
+uname [-amnrsv]
+```
+
+#### Description
+
+Prints selected fields from `uname(2)` on one line, separated by spaces. With no options, prints the kernel name (`-s`). With `-a`, prints kernel name, node name, release, version, and machine in that order.
+
+#### Options
+
+`-h`
+`--help`
+
+Show help message and exit.
+
+`-a`
+
+Print all available information (`-snrvm`).
+
+`-s`
+
+Print the kernel name.
+
+`-n`
+
+Print the network node hostname.
+
+`-r`
+
+Print the kernel release.
+
+`-v`
+
+Print the kernel version.
+
+`-m`
+
+Print the machine hardware name.
+
 ---
 
 ### uniq
@@ -551,6 +649,18 @@ Input file path. Omit to read standard input.
 ### whoami
 
 Print the effective user name.
+
+Extra arguments are ignored.
+
+#### Synopsis
+
+```
+whoami
+```
+
+#### Description
+
+Prints the login name for the effective user ID (`geteuid`), followed by a newline.
 
 ---
 
