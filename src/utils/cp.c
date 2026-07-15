@@ -23,12 +23,6 @@
 
 static const char *usages[] = {"cp [-r] SOURCE... DEST"};
 
-static noreturn void usage(void)
-{
-    fprintf(stdout, "usage: %s\n", usages[0]);
-    exit(EXIT_SUCCESS);
-}
-
 /* Copy file path into directory dir as dir/<basename(path)>. dir must exist.
    Return 0 on success, -1 on error and set errno. */
 static int cp_file_to_dir(const char *path, const char *dir)
@@ -97,7 +91,7 @@ int main(int argc, char *argv[])
         die("%s: %s", argv[0], argparse_strerror(&ctx));
 
     if (argparse_getremargc(&ctx) < 2)
-        usage();
+        usage(usages[0]);
 
     if (argparse_getremargc(&ctx) == 2) {
 

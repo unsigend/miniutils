@@ -223,6 +223,28 @@ Estimate file space usage.
 
 Display a line of text.
 
+Writes each operand to standard output, separated by a single space. A trailing newline is printed unless `-n` is given as the first operand.
+
+#### Synopsis
+
+```
+echo [-n] [STRING]...
+```
+
+#### Description
+
+Prints all `STRING` operands separated by spaces. With no operands, prints a blank line. When the first operand is `-n`, the trailing newline is omitted and remaining operands are printed.
+
+#### Options
+
+`-n`
+
+Do not print a trailing newline. Only recognized when it is the first operand.
+
+`STRING`
+
+Text to print.
+
 ---
 
 ### env
@@ -234,6 +256,18 @@ Run a program in a modified environment.
 ### false
 
 Do nothing and exit with failure status.
+
+Arguments are ignored.
+
+#### Synopsis
+
+```
+false [ignored...]
+```
+
+#### Description
+
+Exits with status `EXIT_FAILURE`. Any arguments are ignored.
 
 ---
 
@@ -374,6 +408,22 @@ Print a sequence of numbers.
 
 Delay for a specified amount of time.
 
+Accepts a single non-negative integer number of seconds.
+
+#### Synopsis
+
+```
+sleep SECONDS
+```
+
+#### Description
+
+Suspends execution for `SECONDS` seconds. The operand must be a non-negative decimal integer that fits in `unsigned int`. Restarts the sleep if interrupted by a signal. Exits successfully when the delay completes. With a missing or extra operand, prints usage and exits successfully.
+
+`SECONDS`
+
+Non-negative integer seconds to sleep.
+
 ---
 
 ### sort
@@ -427,6 +477,18 @@ Translate or delete characters.
 ### true
 
 Do nothing and exit with success status.
+
+Arguments are ignored.
+
+#### Synopsis
+
+```
+true [ignored...]
+```
+
+#### Description
+
+Exits with status `EXIT_SUCCESS`. Any arguments are ignored.
 
 ---
 
@@ -495,6 +557,20 @@ Print the effective user name.
 ### yes
 
 Output a string repeatedly until killed.
+
+#### Synopsis
+
+```
+yes [STRING]...
+```
+
+#### Description
+
+Repeatedly prints a line to standard output until a write fails or the process is killed. With no operands, prints `y` on each line. With operands, prints them separated by spaces, then a newline, on each line. Exits with failure status if a write fails.
+
+`STRING`
+
+Text to print on each line.
 
 ## Contribution
 

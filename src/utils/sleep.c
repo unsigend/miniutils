@@ -15,35 +15,36 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef DIE_H
-#define DIE_H
-
+#include <die.h>
 #include <errno.h>
-#include <stdarg.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdnoreturn.h>
-#include <string.h>
+#include <unistd.h>
 
-static inline noreturn void die(const char *fmt, ...)
+static const char *usages[] = {"sleep SECONDS"};
+
+int main(int argc, char *argv[])
 {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    fputc('\n', stderr);
-    va_end(ap);
-    exit(EXIT_FAILURE);
-}
+    char *endstr;
+    unsigned long v;
+    unsigned int left;
 
-static inline noreturn void die_errno(const char *prog)
-{
-    die("%s: %s", prog, strerror(errno));
-}
+    if (argc != 2)
+        usage(usages[0]);
+    if (argv[1][0] == '-') /* reject negative numbers */
+        die("%s: invalid time interval '%s'", argv[0], argv[1]);
 
-static inline noreturn void usage(const char *usage)
-{
-    fprintf(stdout, "usage: %s\n", usage);
-    exit(EXIT_SUCCESS);
-}
+    errno = 0;
+    v = strtoul(argv[1], &endstr, 10);
+    if (endstr == argv[1] || *endstr != '\0' || errno == ERANGE || v > UINT_MAX)
+        die("%s: invalid time interval '%s'", argv[0], argv[1]);
 
-#endif
+    left = (unsigned int)v;
+
+    while (left) /* sleep might be interrupted by signal */
+        left = sleep(left);
+
+    return EXIT_SUCCESS;
+}

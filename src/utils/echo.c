@@ -15,35 +15,27 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef DIE_H
-#define DIE_H
-
-#include <errno.h>
-#include <stdarg.h>
 #include <stdio.h>
-#include <stdlib.h>
-#include <stdnoreturn.h>
 #include <string.h>
 
-static inline noreturn void die(const char *fmt, ...)
+int main(int argc, char *argv[])
 {
-    va_list ap;
-    va_start(ap, fmt);
-    vfprintf(stderr, fmt, ap);
-    fputc('\n', stderr);
-    va_end(ap);
-    exit(EXIT_FAILURE);
-}
+    int i = 1;
+    int nflag = 0;
 
-static inline noreturn void die_errno(const char *prog)
-{
-    die("%s: %s", prog, strerror(errno));
-}
+    if (argc > 1 && strcmp(argv[1], "-n") == 0) /* no newline */
+    {
+        nflag = 1;
+        i = 2;
+    }
+    for (; i < argc; i++) {
+        fputs(argv[i], stdout);
+        if (i < argc - 1) {
+            fputc(' ', stdout);
+        }
+    }
+    if (!nflag)
+        fputc('\n', stdout);
 
-static inline noreturn void usage(const char *usage)
-{
-    fprintf(stdout, "usage: %s\n", usage);
-    exit(EXIT_SUCCESS);
+    return 0;
 }
-
-#endif

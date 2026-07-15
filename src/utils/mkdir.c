@@ -20,15 +20,9 @@
 #include <fileutils.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdnoreturn.h>
 #include <sys/stat.h>
 
 static const char *usages[] = {"mkdir [-p] [-m MODE] DIRECTORY..."};
-static noreturn void usage(void)
-{
-    fprintf(stdout, "usage: %s\n", usages[0]);
-    exit(EXIT_SUCCESS);
-}
 
 #define MODE (S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH)
 
@@ -59,7 +53,7 @@ int main(int argc, char *argv[])
         die("%s: %s", argv[0], argparse_strerror(&ctx));
 
     if (argparse_getremargc(&ctx) < 1)
-        usage();
+        usage(usages[0]);
 
     unsigned int mode = MODE;
     if (modestr) {
