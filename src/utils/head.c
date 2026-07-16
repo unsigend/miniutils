@@ -22,7 +22,7 @@
 #include <stdio.h>
 
 #define DEFAULT_LINES 10
-#define NOT_SET INT_MIN
+#define NOTSET INT_MIN
 #define MIN(a, b) ((a) < (b) ? (a) : (b))
 
 static const char *usages[] = {"head [-n LINES] [-c BYTES] [FILE...]"};
@@ -72,8 +72,8 @@ static int lines_mode(FILE *fp, int lines)
 
 int main(int argc, char *argv[])
 {
-    int n = NOT_SET;
-    int c = NOT_SET;
+    int n = NOTSET;
+    int c = NOTSET;
 
     struct argparse ctx;
     struct argparse_opt opts[] = {
@@ -95,14 +95,14 @@ int main(int argc, char *argv[])
     if (argparse_parse(&ctx, argc - 1, argv + 1) == -1)
         die("%s: %s", argv[0], argparse_strerror(&ctx));
 
-    if ((n != NOT_SET && n < 0) || (c != NOT_SET && c < 0))
+    if ((n != NOTSET && n < 0) || (c != NOTSET && c < 0))
         die("%s: invalid argument", argv[0]);
-    if (n != NOT_SET && c != NOT_SET)
+    if (n != NOTSET && c != NOTSET)
         die("%s: cannot combine -n and -c", argv[0]);
-    if (n == NOT_SET && c == NOT_SET)
+    if (n == NOTSET && c == NOTSET)
         n = DEFAULT_LINES;
 
-    if (c != NOT_SET) /* bytes mode */
+    if (c != NOTSET) /* bytes mode */
     {
         if (argparse_getremargc(&ctx) < 1) /* from stdin */
         {
